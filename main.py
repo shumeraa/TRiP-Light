@@ -1,23 +1,48 @@
-from functions import get_user_input, excel_to_df_cell, process_excel_files
+from functions import (
+    get_user_input,
+    excel_to_df_cell,
+    process_excel_files,
+    get_sheet_names,
+    createExcelFile,
+)
 from tripManager import TripManager
+from tripLeaderManager import TripLeaderManager
 
-welcomeText = "Welcome to TRiP-Light! Before you start, please make sure you have all of the prefs in your 'Data' folder located in the same directory as this script."
+welcomeText = "Welcome to TRiP-Light! Before you start, please make sure you have all of the prefs in your 'Data' folder located in the same directory as this script. Make sure there is only 1 empty row at the top of the prefs."
 
 if __name__ == "__main__":
     print(welcomeText)
 
+    numberOfTrips = int(input("How many trips are are there this semester? "))
+
     dates_cell = get_user_input("Dates")
     trip_cell = get_user_input("TRiP")
     preferences_cell = get_user_input("Preferences")
-    name_cell = get_user_input("Name")
+    name_cell = get_user_input("Name")  # This is not correct, we do not want the header
 
-    dateXY, tripXY, prefXY, nameXY = excel_to_df_cell(dates_cell, trip_cell, preferences_cell, name_cell)
-    
-    prefsSheetIndex = get_user_input("Prefs")
-    tripLeaderInfoIndex = get_user_input("Prefs")
-    
-    process_excel_files(dateXY, tripXY, prefXY, nameXY)
-    
+    dateXY, tripXY, prefXY, nameXY = excel_to_df_cell(
+        dates_cell, trip_cell, preferences_cell, name_cell
+    )
+
+    prefsSheetIndex = get_sheet_names("Prefs")
+    tripLeaderInfoIndex = get_sheet_names("Prefs")
+
+    trip_leader_manager = TripLeaderManager()
+    trip_manager = TripManager()
+
+    process_excel_files(
+        trip_leader_manager,
+        trip_manager,
+        numberOfTrips,
+        dateXY,
+        tripXY,
+        prefXY,
+        nameXY,
+        prefsSheetIndex,
+        tripLeaderInfoIndex,
+    )
+
+    createExcelFile(trip_leader_manager, trip_manager)
 
 
 # Example usage:

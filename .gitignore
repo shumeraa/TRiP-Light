@@ -1,2 +1,5 @@
 .venv/
 Data/
+~$output.xlsx
+output.xlsx
+__pycache__/

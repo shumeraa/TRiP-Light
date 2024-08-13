@@ -1,3 +1,6 @@
+import math
+
+
 class TripLeader:
     def __init__(self, name: str, prefs=None):
         self.name = name
@@ -8,7 +11,13 @@ class TripLeader:
             return []
 
         # Filter out zeroes and sort the remaining preferences
-        sorted_prefs = sorted([pref for pref in self.prefs if pref != 0])
+        sorted_prefs = sorted(
+            [
+                pref
+                for pref in self.prefs
+                if not (isinstance(pref, float) and math.isnan(pref))
+            ]
+        )
         length = len(sorted_prefs)
 
         if length == 0:
@@ -22,8 +31,8 @@ class TripLeader:
         # Categorize each preference
         categorized_prefs = []
         for pref in self.prefs:
-            if pref == 0:
-                continue
+            if isinstance(pref, float) and math.isnan(pref):
+                categorized_prefs.append((pref, "nan"))
             if pref in bottom_third:
                 categorized_prefs.append((pref, "bottom third"))
             elif pref in middle_third:
