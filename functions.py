@@ -4,6 +4,8 @@ import math
 from tripLeaderManager import TripLeaderManager, TripLeader
 from openpyxl import load_workbook
 from openpyxl.styles import Font, Alignment, PatternFill
+from openpyxl.utils import get_column_letter
+from io import BytesIO
 
 
 def get_user_input(header_name):
@@ -106,6 +108,32 @@ def addTrips(trip_manager, numberOfTrips, tripDF, dateXY, tripXY, file_path):
         return
 
 
+# def remove_black_highlighted_cells_in_column(file_path, sheet_name, column_index):
+#     # Load the workbook and select the specified sheet
+#     workbook = load_workbook(file_path)
+#     sheet = workbook[sheet_name]
+
+#     column_letter = get_column_letter(column_index + 1)
+
+#     # Define the black fill pattern
+#     black_fill = PatternFill(
+#         start_color="000000", end_color="000000", fill_type="solid"
+#     )
+
+#     # Loop through all cells in the specified column
+#     for cell in sheet[column_letter]:
+#         # Check if the cell's fill matches the black pattern
+#         if cell.fill == black_fill:
+#             cell.value = None  # Delete the cell's value
+
+#     # Save the modified workbook to an in-memory bytes buffer
+#     modified_file = BytesIO()
+#     workbook.save(modified_file)
+#     modified_file.seek(0)
+
+#     return modified_file
+
+
 def process_excel_files(
     trip_leader_manager,
     trip_manager,
@@ -137,9 +165,11 @@ def process_excel_files(
 
         # Checking if the file is empty
         try:
+
             df = pd.ExcelFile(file_path, engine="openpyxl")
             sheetNames = df.sheet_names
             prefsDF = pd.read_excel(file_path, sheet_name=sheetNames[prefsSheetIndex])
+            # modified_file = remove_black_highlighted_cells_in_column(file_path, sheetNames[prefsSheetIndex], prefXY[1])
             tripLeaderDF = pd.read_excel(
                 file_path, sheet_name=sheetNames[tripLeaderInfoIndex]
             )
