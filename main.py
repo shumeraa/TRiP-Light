@@ -3,29 +3,30 @@ from functions import (
     excel_to_df_cell,
     process_excel_files,
     get_sheet_names,
-    createExcelFile,
+    createExcelFileHighlighedOnThirds,
 )
 from tripManager import TripManager
 from tripLeaderManager import TripLeaderManager
+import CONSTANTS
 
 welcomeText = "Welcome to TRiP-Light! Before you start, please make sure you have all of the prefs in your 'Data' folder located in the same directory as this script. Make sure there is only 1 empty row at the top of the prefs."
 
 if __name__ == "__main__":
     print(welcomeText)
 
-    numberOfTrips = int(input("How many trips are are there this semester? "))
+    numberOfTrips = CONSTANTS.numTrips
 
-    dates_cell = get_user_input("Dates")
-    trip_cell = get_user_input("TRiP")
-    preferences_cell = get_user_input("Preferences")
-    name_cell = get_user_input("Name")  # This is not correct, we do not want the header
+    dates_cell = CONSTANTS.datesCell
+    trip_cell = CONSTANTS.tripCell
+    preferences_cell = CONSTANTS.tripPrefsCell
+    name_cell = CONSTANTS.nameCell
 
     dateXY, tripXY, prefXY, nameXY = excel_to_df_cell(
         dates_cell, trip_cell, preferences_cell, name_cell
     )
 
-    prefsSheetIndex = get_sheet_names("Prefs")
-    tripLeaderInfoIndex = get_sheet_names("Prefs")
+    prefsSheetIndex = CONSTANTS.prefsSheetIndex
+    tripLeaderInfoIndex = CONSTANTS.tripLeaderInfoIndex
 
     trip_leader_manager = TripLeaderManager()
     trip_manager = TripManager()
@@ -42,7 +43,7 @@ if __name__ == "__main__":
         tripLeaderInfoIndex,
     )
 
-    createExcelFile(trip_leader_manager, trip_manager)
+    createExcelFileHighlighedOnThirds(trip_leader_manager, trip_manager)
 
 
 # Example usage:

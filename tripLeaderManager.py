@@ -41,6 +41,8 @@ class TripLeader:
                 categorized_prefs.append((pref, "top third"))
 
         return categorized_prefs
+    
+    def 
 
 
 class TripLeaderManager:
