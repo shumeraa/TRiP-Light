@@ -2,5 +2,5 @@
 Data/
 ~$output.xlsx
 output.xlsx
-__pycache__/
-*/
+/__pycache__/
+/OldData
