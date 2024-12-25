@@ -5,6 +5,7 @@ class TripLeader:
     def __init__(self, name: str, prefs=None):
         self.name = name
         self.prefs = prefs if prefs is not None else []
+        self.guideStatus = {}
 
     def categorize_prefs(self):
         if not self.prefs:
@@ -21,7 +22,7 @@ class TripLeader:
         length = len(sorted_prefs)
 
         if length == 0:
-            return [(pref, "No Category") for pref in self.prefs]
+            return [(pref, "nan") for pref in self.prefs]
 
         # Define the indices for the thirds
         bottom_third = sorted_prefs[: length // 3]

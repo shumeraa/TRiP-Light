@@ -1,1 +1,3 @@
 Need trip category and trip leader guide status matrix
+
+next step is to read in trip categories

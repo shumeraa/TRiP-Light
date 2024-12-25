@@ -2,5 +2,8 @@
 Data/
 ~$output.xlsx
 output.xlsx
-/__pycache__/
 /OldData
+*.pyc
+__pycache__/
+*.py[cod]
+*$py.class

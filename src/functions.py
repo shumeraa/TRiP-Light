@@ -27,13 +27,29 @@ def excel_to_df_indices(cell_reference):
     return rowIndex, colIndex
 
 
-def excel_to_df_cell(dates_cell, trip_cell, preferences_cell, name_cell):
+def excel_to_df_cell(
+    dates_cell,
+    trip_cell,
+    preferences_cell,
+    name_cell,
+    nameCellGuideStatus,
+    firstPromotionalCategoryCell,
+):
     dates_index = excel_to_df_indices(dates_cell)
     trip_index = excel_to_df_indices(trip_cell)
     preferences_index = excel_to_df_indices(preferences_cell)
     name_index = excel_to_df_indices(name_cell)
+    nameCellGuideStatus = excel_to_df_indices(nameCellGuideStatus)
+    firstPromotionalCategoryCell = excel_to_df_indices(firstPromotionalCategoryCell)
 
-    return dates_index, trip_index, preferences_index, name_index
+    return (
+        dates_index,
+        trip_index,
+        preferences_index,
+        name_index,
+        nameCellGuideStatus,
+        firstPromotionalCategoryCell,
+    )
 
 
 def get_sheet_names(sheet_name):
@@ -60,6 +76,9 @@ def createLeader(
     # leader1 = TripLeader("John Doe", [10, 3, 5, 8, 2, 7, 1, 9, 6, 4])
     # manager.add_trip_leader(leader1)
     name = tripLeaderDF.iloc[nameXY[0], nameXY[1]]
+    name = (
+        name.lower().strip()
+    )  # make name lowercase and remove any leading/trailing whitespace
 
     currentRow = prefXY[0] + 1
 
@@ -134,16 +153,66 @@ def addTrips(trip_manager, numberOfTrips, tripDF, dateXY, tripXY, file_path):
 
 #     return modified_file
 
-def getLeaderGuideStatus():
-    # in progress
-    # first, create a dict with leader as the key and the value is another dict
-    # that dict has the guide category as the key and the value is the 1 for lG and 0 for aG
-    # then match it to a leader and add the guide category to the leader
-    # would access it with 
-    
+
+def addLeaderGuideStatus(
+    guideStatusDF,
+    trip_leader_manager,
+    nameCellGuideStatus,
+    firstPromotionalCategoryCell,
+):
+
+    # first, get all of the available guide categories
+    availableGuideCategories = []
+    currentCategoryCol = firstPromotionalCategoryCell[1]
+    # iterate from the first category to the first empty col
+    while currentCategoryCol < len(guideStatusDF.columns) and not pd.isnull(
+        guideStatusDF.iloc[firstPromotionalCategoryCell[0], currentCategoryCol]
+    ):
+        category = guideStatusDF.iloc[
+            firstPromotionalCategoryCell[0], currentCategoryCol
+        ]
+        category.lower().strip()
+        availableGuideCategories.append(category)
+        currentCategoryCol += 1
+    print("The categories are: ", availableGuideCategories)
+
+    # now iterate through every leader to get their guide status and add it to their leader object
+    # if the cell has LG, set status to 1, if anything else, set status to 0
+    currentLeaderRow = nameCellGuideStatus[0] + 1  # skip the header row
+    while currentLeaderRow < len(guideStatusDF) and not pd.isnull(
+        guideStatusDF.iloc[currentLeaderRow, nameCellGuideStatus[1]]
+    ):
+        name = guideStatusDF.iloc[currentLeaderRow, nameCellGuideStatus[1]]
+        name = name.lower().strip()
+
+        leaderObject = trip_leader_manager.find_trip_leader(name)
+
+        if leaderObject != None:
+            # the leader exists, so we can add the guide status to them
+            guideStatusDict = {}
+            currentCategoryCol = firstPromotionalCategoryCell[1]
+            for category in availableGuideCategories:
+                guideStatus = guideStatusDF.iloc[currentLeaderRow, currentCategoryCol]
+                
+                if isinstance(guideStatus, str):
+                    guideStatus = guideStatus.lower().strip()
+                    
+
+                if guideStatus == "lg":
+                    guideStatusDict[category] = 1
+                else:
+                    guideStatusDict[category] = 0
+                currentCategoryCol += 1
+
+            leaderObject.guideStatus = guideStatusDict
+            currentLeaderRow += 1
+        else:
+            raise ValueError(
+                f"Leader {name} from the leader guide status doc does not match any leaders from the prefs."
+            )
 
 
-def process_excel_files(
+def process_all_pref_files(
     trip_leader_manager,
     trip_manager,
     numberOfTrips,
@@ -153,6 +222,9 @@ def process_excel_files(
     nameXY,
     prefsSheetIndex,
     tripLeaderInfoIndex,
+    guideStatusNameXY,
+    guideStatusFirstCategoryXY,
+    leaderGuideStatusFileName,
     folder_path="Data",
 ):
     if not os.path.exists(folder_path):
@@ -162,7 +234,9 @@ def process_excel_files(
     files = [
         f
         for f in os.listdir(folder_path)
-        if f.endswith(".xlsx") and not f.startswith("~")
+        if f.endswith(".xlsx")
+        and not f.startswith("~")
+        and f != leaderGuideStatusFileName
     ]
 
     if not files:
@@ -216,6 +290,29 @@ def process_excel_files(
                 tripXY,
                 file_path,
             )
+
+
+def process_leader_status_file(
+    file_path, trip_leader_manager, guideStatusNameXY, guideStatusFirstCategoryXY
+):
+    try:
+        file_path = os.path.join("Data", file_path)
+        guideStatusExcel = pd.ExcelFile(file_path, engine="openpyxl")
+        guideStatusDF = pd.read_excel(guideStatusExcel, sheet_name=0)
+
+        if guideStatusDF.empty:
+            print(f"File {file_path} has an empty sheet")
+            raise
+    except Exception as e:
+        print(f"Could not read {file_path}: {e}")
+        raise
+
+    addLeaderGuideStatus(
+        guideStatusDF,
+        trip_leader_manager,
+        guideStatusNameXY,
+        guideStatusFirstCategoryXY,
+    )
 
 
 def createExcelFileHighlighedOnThirds(trip_leader_manager, trip_manager):

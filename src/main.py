@@ -1,38 +1,54 @@
 from functions import (
-    get_user_input,
     excel_to_df_cell,
-    process_excel_files,
-    get_sheet_names,
+    process_all_pref_files,
     createExcelFileHighlighedOnThirds,
+    process_leader_status_file,
 )
 from tripManager import TripManager
 from tripLeaderManager import TripLeaderManager
-import CONSTANTS
+import variables
 
 welcomeText = "Welcome to TRiP-Light! Before you start, please make sure you have all of the prefs in your 'Data' folder located in the same directory as this script. Make sure there is only 1 empty row at the top of the prefs."
 
 if __name__ == "__main__":
     print(welcomeText)
 
-    # converts excel cell name format to a pandas friendly format 
-    dateXY, tripXY, prefXY, nameXY = excel_to_df_cell(
-        CONSTANTS.datesCell, CONSTANTS.tripCell, CONSTANTS.tripPrefsCell, CONSTANTS.nameCell
+    # converts excel cell name format to a pandas friendly format
+    dateXY, tripXY, prefXY, nameXY, guideStatusNameXY, guideStatusFirstCategoryXY = (
+        excel_to_df_cell(
+            variables.datesCell,
+            variables.tripCell,
+            variables.tripPrefsCell,
+            variables.nameCell,
+            variables.nameCellGuideStatus,
+            variables.firstPromotionalCategoryCell,
+        )
     )
 
     trip_leader_manager = TripLeaderManager()
     trip_manager = TripManager()
 
     # Add trips and create leaders
-    process_excel_files(
+    process_all_pref_files(
         trip_leader_manager,
         trip_manager,
-        CONSTANTS.numTrips,
+        variables.numTrips,
         dateXY,
         tripXY,
         prefXY,
         nameXY,
-        CONSTANTS.prefsSheetIndex,
-        CONSTANTS.tripLeaderInfoIndex,
+        variables.prefsSheetIndex,
+        variables.tripLeaderInfoIndex,
+        guideStatusNameXY,
+        guideStatusFirstCategoryXY,
+        variables.leaderGuideStatusFileName,
+    )
+
+    process_leader_status_file(
+        variables.leaderGuideStatusFileName,
+        trip_leader_manager,
+        guideStatusNameXY,
+        guideStatusFirstCategoryXY,
     )
 
     createExcelFileHighlighedOnThirds(trip_leader_manager, trip_manager)
