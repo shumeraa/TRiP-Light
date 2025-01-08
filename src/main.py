@@ -12,43 +12,19 @@ welcomeText = "Welcome to TRiP-Light! Before you start, please make sure you hav
 
 if __name__ == "__main__":
     print(welcomeText)
-
-    # converts excel cell name format to a pandas friendly format
-    dateXY, tripXY, prefXY, nameXY, guideStatusNameXY, guideStatusFirstCategoryXY = (
-        excel_to_df_cell(
-            variables.datesCell,
-            variables.tripCell,
-            variables.tripPrefsCell,
-            variables.nameCell,
-            variables.nameCellGuideStatus,
-            variables.firstPromotionalCategoryCell,
-        )
-    )
-
-    trip_leader_manager = TripLeaderManager()
+    
+    trip_leader_manager = TripLeaderManager(variables.leaderCells)
     trip_manager = TripManager()
 
     # Add trips and create leaders
     process_all_pref_files(
         trip_leader_manager,
-        trip_manager,
-        variables.numTrips,
-        dateXY,
-        tripXY,
-        prefXY,
-        nameXY,
-        variables.prefsSheetIndex,
-        variables.tripLeaderInfoIndex,
-        guideStatusNameXY,
-        guideStatusFirstCategoryXY,
-        variables.leaderGuideStatusFileName,
+        trip_manager
     )
 
     process_leader_status_file(
         variables.leaderGuideStatusFileName,
         trip_leader_manager,
-        guideStatusNameXY,
-        guideStatusFirstCategoryXY,
     )
 
     createExcelFileHighlighedOnThirds(trip_leader_manager, trip_manager)

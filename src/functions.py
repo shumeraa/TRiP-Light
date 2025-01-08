@@ -8,11 +8,16 @@ from openpyxl.utils import get_column_letter
 from io import BytesIO
 
 
-def get_user_input(header_name):
-    return input(f"Please enter the excel cell for the '{header_name}' header: ")
-
-
 def excel_to_df_indices(cell_reference):
+    if (
+        not isinstance(cell_reference, str)
+        or not cell_reference[0].isalpha()
+        or not cell_reference[1:].isdigit()
+    ):
+        raise ValueError(
+            f"Cell '{cell_reference}' must be a string that starts with a letter followed by a number, like 'C4'."
+        )
+
     # Extract the column letter and row number from the Excel cell reference
     column_letter = cell_reference[0].upper()
     row_number = int(cell_reference[1:])
@@ -27,54 +32,19 @@ def excel_to_df_indices(cell_reference):
     return rowIndex, colIndex
 
 
-def excel_to_df_cell(
-    dates_cell,
-    trip_cell,
-    preferences_cell,
-    name_cell,
-    nameCellGuideStatus,
-    firstPromotionalCategoryCell,
-):
-    dates_index = excel_to_df_indices(dates_cell)
-    trip_index = excel_to_df_indices(trip_cell)
-    preferences_index = excel_to_df_indices(preferences_cell)
-    name_index = excel_to_df_indices(name_cell)
-    nameCellGuideStatus = excel_to_df_indices(nameCellGuideStatus)
-    firstPromotionalCategoryCell = excel_to_df_indices(firstPromotionalCategoryCell)
-
-    return (
-        dates_index,
-        trip_index,
-        preferences_index,
-        name_index,
-        nameCellGuideStatus,
-        firstPromotionalCategoryCell,
-    )
-
-
-def get_sheet_names(sheet_name):
-    return (
-        int(
-            input(
-                f"Please enter the index of the sheet for the '{sheet_name}' sheet (1st sheet is 1): "
-            )
-        )
-        - 1
-    )
-
-
 def createLeader(
     prefsDF,
     tripLeaderDF,
-    numberOfTrips,
     trip_leader_manager,
-    nameXY,
-    prefXY,
-    tripXY,
     file_path,
 ):
     # leader1 = TripLeader("John Doe", [10, 3, 5, 8, 2, 7, 1, 9, 6, 4])
     # manager.add_trip_leader(leader1)
+    nameXY = trip_leader_manager.cell_mappings["nameCell"]
+    prefXY = trip_leader_manager.cell_mappings["leaderPrefsCell"]
+    tripXY = trip_leader_manager.cell_mappings["leaderTripCell"]
+    numberOfTrips = trip_leader_manager.cell_mappings["numTrips"]
+
     name = tripLeaderDF.iloc[nameXY[0], nameXY[1]]
     name = (
         name.lower().strip()
@@ -246,7 +216,6 @@ def process_all_pref_files(
                 tripLeaderDF,
                 numberOfTrips,
                 trip_leader_manager,
-                nameXY,
                 prefXY,
                 tripXY,
                 file_path,

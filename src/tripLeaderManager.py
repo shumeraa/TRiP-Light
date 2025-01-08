@@ -1,4 +1,5 @@
 import math
+from functions import excel_to_df_indices
 
 
 class TripLeader:
@@ -45,8 +46,22 @@ class TripLeader:
 
 
 class TripLeaderManager:
-    def __init__(self):
+    def __init__(self, cell_mappings):
         self.trip_leaders = {}
+
+        self.cell_mappings = {}
+
+        for key, value in cell_mappings.items():
+            # if it is a list , iterate over each value in the list
+            # this is for values like threeLeadersCell
+            if isinstance(value, list):
+                self.cell_mappings[key] = [
+                    self.excel_to_df_indices(cell) for cell in value
+                ]
+            elif isinstance(value, int):
+                self.cell_mappings[key] = value
+            else:
+                self.cell_mappings[key] = excel_to_df_indices(value)
 
     def add_trip_leader(self, trip_leader: TripLeader):
         self.trip_leaders[trip_leader.name] = trip_leader
@@ -57,5 +72,3 @@ class TripLeaderManager:
 
     def find_trip_leader(self, name: str):
         return self.trip_leaders.get(name, None)
-
-
