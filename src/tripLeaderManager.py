@@ -8,6 +8,11 @@ class TripLeader:
         self.prefs = prefs if prefs is not None else []
         self.guideStatus = {}
 
+    def __repr__(self):
+        prefs_str = ', '.join(map(str, self.prefs))
+        guide_status_str = ', '.join(f"{k}: {v}" for k, v in self.guideStatus.items())
+        return f"TripLeader(name={self.name}, prefs=[{prefs_str}], guideStatus={{ {guide_status_str} }})"
+
     def categorize_prefs(self):
         if not self.prefs:
             return []

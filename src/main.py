@@ -41,6 +41,10 @@ if __name__ == "__main__":
 
     createExcelFileHighlighedOnThirds(trip_leader_manager, trip_manager)
     
-    print(trip_manager.get_trips)
+    for trip in trip_manager.get_trips():
+        print(trip)
+        
     print("____________________")
-    print(trip_leader_manager.get_all_trip_leaders)
+    
+    for trip_leader in trip_leader_manager.get_all_trip_leaders():
+        print(trip_leader)
