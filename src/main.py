@@ -3,6 +3,7 @@ from functions import (
     process_all_pref_files,
     createExcelFileHighlighedOnThirds,
     process_leader_status_file,
+    process_trip_status_file,
 )
 from tripManager import TripManager
 from tripLeaderManager import TripLeaderManager
@@ -12,36 +13,31 @@ welcomeText = "Welcome to TRiP-Light! Before you start, please make sure you hav
 
 if __name__ == "__main__":
     print(welcomeText)
-    
-    trip_leader_manager = TripLeaderManager(variables.leaderCells)
+
+    prefsSheetIndex = variables.prefsSheetIndex
+    tripLeaderInfoIndex = variables.tripLeaderInfoIndex
+    folderPath = variables.folderPath
+
+    trip_leader_manager = TripLeaderManager(variables.leaderInfoDict)
     trip_manager = TripManager()
+
+    tripStatusFileName = trip_manager.cell_mappings["tripStatusFileName"]
+    leaderGuideStatusFileName = trip_leader_manager.cell_mappings[
+        "leaderGuideStatusFileName"
+    ]
 
     # Add trips and create leaders
     process_all_pref_files(
         trip_leader_manager,
-        trip_manager
+        prefsSheetIndex,
+        tripLeaderInfoIndex,
+        leaderGuideStatusFileName,
+        tripStatusFileName,
+        folderPath,
     )
 
-    process_leader_status_file(
-        variables.leaderGuideStatusFileName,
-        trip_leader_manager,
-    )
+    process_leader_status_file(trip_leader_manager)
+
+    process_trip_status_file(trip_manager)
 
     createExcelFileHighlighedOnThirds(trip_leader_manager, trip_manager)
-
-
-# Example usage:
-# leader = TripLeader("John Doe", [10, 3, 5, 8, 2, 7, 1, 9, 6, 4, 0, 0])
-
-# print(f"Trip Leader: {leader.name}")
-# print("Preferences categorized:")
-# for pref, category in leader.categorize_prefs():
-#     print(f"Preference: {pref}, Category: {category}")
-
-# Example usage:
-#
-# manager.add_trip("Beach Trip", datetime(2024, 8, 15))
-# manager.add_trip("Mountain Hike", datetime(2024, 9, 10))
-
-# print(manager.get_trips())
-# print(manager.get_trips_by_date())

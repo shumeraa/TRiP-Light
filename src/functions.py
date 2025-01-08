@@ -8,16 +8,39 @@ from openpyxl.utils import get_column_letter
 from io import BytesIO
 
 
-def excel_to_df_indices(cell_reference):
+def check_if_excel_cell(cell):
     if (
-        not isinstance(cell_reference, str)
-        or not cell_reference[0].isalpha()
-        or not cell_reference[1:].isdigit()
+        isinstance(cell, str)
+        and len(cell) == 2
+        and cell[0].isalpha()
+        and cell[1].isdigit()
     ):
-        raise ValueError(
-            f"Cell '{cell_reference}' must be a string that starts with a letter followed by a number, like 'C4'."
-        )
+        return True
 
+    return False
+
+
+def reformat_cells_manager(value):
+    # if value is excel cell
+    if check_if_excel_cell(value):
+        return excel_to_df_indices(value)
+    # if it is a list of excel cells
+    elif isinstance(value, list):
+        reformatedCellList = []
+        for cell in value:
+            if check_if_excel_cell(cell):
+                reformatedCellList.append(excel_to_df_indices(cell))
+            else:
+                raise ValueError(
+                    f"Expected each value in variable list '{value}' to be a cell, but '{cell}' is not a cell."
+                )
+        return reformatedCellList
+    else:
+        # Don't reformat if it is not a cell or list of cells
+        return value
+
+
+def excel_to_df_indices(cell_reference):
     # Extract the column letter and row number from the Excel cell reference
     column_letter = cell_reference[0].upper()
     row_number = int(cell_reference[1:])
@@ -38,8 +61,7 @@ def createLeader(
     trip_leader_manager,
     file_path,
 ):
-    # leader1 = TripLeader("John Doe", [10, 3, 5, 8, 2, 7, 1, 9, 6, 4])
-    # manager.add_trip_leader(leader1)
+
     nameXY = trip_leader_manager.cell_mappings["nameCell"]
     prefXY = trip_leader_manager.cell_mappings["leaderPrefsCell"]
     tripXY = trip_leader_manager.cell_mappings["leaderTripCell"]
@@ -77,7 +99,13 @@ def createLeader(
     trip_leader_manager.add_trip_leader(leader)
 
 
-def addTrips(trip_manager, numberOfTrips, tripDF, dateXY, tripXY, file_path):
+def addTrips(trip_manager, tripDF, file_path):
+
+    dateXY = trip_manager.cell_mappings["datesCell"]
+    tripXY = trip_manager.cell_mappings["tripCell"]
+    categoryXY = trip_manager.cell_mappings["tripCategoryCell"]
+    numberOfTrips = trip_manager.cell_mappings["numTrips"]
+
     # iterate through the rows of the tripDF, adding each trip date and name to the trip_manager
     currentRow = dateXY[0] + 1
 
@@ -86,7 +114,8 @@ def addTrips(trip_manager, numberOfTrips, tripDF, dateXY, tripXY, file_path):
     ):
         name = tripDF.iloc[currentRow, tripXY[1]]
         date = tripDF.iloc[currentRow, dateXY[1]]
-        trip_manager.add_trip(name, date)
+        category = tripDF.iloc[currentRow, categoryXY[1]]
+        trip_manager.add_trip(name, date, category)
         currentRow += 1
 
     # return if that the number of trips added matches the number of trips in the tripDF
@@ -101,9 +130,12 @@ def addTrips(trip_manager, numberOfTrips, tripDF, dateXY, tripXY, file_path):
 def addLeaderGuideStatus(
     guideStatusDF,
     trip_leader_manager,
-    nameCellGuideStatus,
-    firstPromotionalCategoryCell,
+    trip_manager
 ):
+    nameCellGuideStatus = trip_leader_manager.cell_mappings["nameCellGuideStatus"]
+    firstPromotionalCategoryCell = trip_leader_manager.cell_mappings[
+        "firstPromotionalCategoryCell"
+    ]
 
     # first, get all of the available guide categories
     availableGuideCategories = []
@@ -118,6 +150,14 @@ def addLeaderGuideStatus(
         category.lower().strip()
         availableGuideCategories.append(category)
         currentCategoryCol += 1
+        
+    trip_categories = trip_manager.get_available_categories()
+    
+    if not set(availableGuideCategories).issubset(set(trip_categories)):
+        raise ValueError(
+            f"Guide categories in the guide status doc do not match the trip categories. Guide categories: {availableGuideCategories}, Trip categories: {trip_categories}."
+        )
+        
     print("The categories are: ", availableGuideCategories)
 
     # now iterate through every leader to get their guide status and add it to their leader object
@@ -157,17 +197,10 @@ def addLeaderGuideStatus(
 
 def process_all_pref_files(
     trip_leader_manager,
-    trip_manager,
-    numberOfTrips,
-    dateXY,
-    tripXY,
-    prefXY,
-    nameXY,
     prefsSheetIndex,
     tripLeaderInfoIndex,
-    guideStatusNameXY,
-    guideStatusFirstCategoryXY,
     leaderGuideStatusFileName,
+    tripStatusFileName,
     folder_path="Data",
 ):
     if not os.path.exists(folder_path):
@@ -180,6 +213,7 @@ def process_all_pref_files(
         if f.endswith(".xlsx")
         and not f.startswith("~")
         and f != leaderGuideStatusFileName
+        and f != tripStatusFileName
     ]
 
     if not files:
@@ -207,38 +241,18 @@ def process_all_pref_files(
             print(f"Could not read {file_name}: {e}")
             raise
 
-        if index == 0:
-
-            addTrips(trip_manager, numberOfTrips, prefsDF, dateXY, tripXY, file_path)
-
-            createLeader(
-                prefsDF,
-                tripLeaderDF,
-                numberOfTrips,
-                trip_leader_manager,
-                prefXY,
-                tripXY,
-                file_path,
-            )
-
-        else:
-            createLeader(
-                prefsDF,
-                tripLeaderDF,
-                numberOfTrips,
-                trip_leader_manager,
-                nameXY,
-                prefXY,
-                tripXY,
-                file_path,
-            )
+        createLeader(
+            prefsDF,
+            tripLeaderDF,
+            trip_leader_manager,
+            file_path,
+        )
 
 
-def process_leader_status_file(
-    file_path, trip_leader_manager, guideStatusNameXY, guideStatusFirstCategoryXY
-):
+def process_leader_status_file(trip_leader_manager):
+    file_path = trip_leader_manager.cell_mappings["leaderGuideStatusFileName"]
+
     try:
-        file_path = os.path.join("Data", file_path)
         guideStatusExcel = pd.ExcelFile(file_path, engine="openpyxl")
         guideStatusDF = pd.read_excel(guideStatusExcel, sheet_name=0)
 
@@ -252,9 +266,25 @@ def process_leader_status_file(
     addLeaderGuideStatus(
         guideStatusDF,
         trip_leader_manager,
-        guideStatusNameXY,
-        guideStatusFirstCategoryXY,
     )
+
+
+def process_trip_status_file(trip_manager):
+    numberOfTrips = trip_manager.cell_mappings["numTrips"]
+    file_path = trip_manager.cell_mappings["tripStatusFileName"]
+
+    try:
+        tripStatusExcel = pd.ExcelFile(file_path, engine="openpyxl")
+        tripStatusDF = pd.read_excel(tripStatusExcel, sheet_name=0)
+
+        if tripStatusDF.empty:
+            print(f"File {file_path} has an empty sheet")
+            raise
+    except Exception as e:
+        print(f"Could not read {file_path}: {e}")
+        raise
+
+    addTrips(trip_manager, numberOfTrips, tripStatusDF, file_path)
 
 
 def createExcelFileHighlighedOnThirds(trip_leader_manager, trip_manager):
