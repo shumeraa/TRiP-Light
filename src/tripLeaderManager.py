@@ -1,5 +1,5 @@
 import math
-from functions import reformat_cells_manager
+from utils import reformat_cells_manager
 
 
 class TripLeader:

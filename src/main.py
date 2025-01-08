@@ -1,5 +1,4 @@
 from functions import (
-    excel_to_df_cell,
     process_all_pref_files,
     createExcelFileHighlighedOnThirds,
     process_leader_status_file,
@@ -19,7 +18,7 @@ if __name__ == "__main__":
     folderPath = variables.folderPath
 
     trip_leader_manager = TripLeaderManager(variables.leaderInfoDict)
-    trip_manager = TripManager()
+    trip_manager = TripManager(variables.tripInfoDict)
 
     tripStatusFileName = trip_manager.cell_mappings["tripStatusFileName"]
     leaderGuideStatusFileName = trip_leader_manager.cell_mappings[
@@ -36,8 +35,12 @@ if __name__ == "__main__":
         folderPath,
     )
 
-    process_leader_status_file(trip_leader_manager)
-
     process_trip_status_file(trip_manager)
 
+    process_leader_status_file(trip_leader_manager, trip_manager)
+
     createExcelFileHighlighedOnThirds(trip_leader_manager, trip_manager)
+    
+    print(trip_manager.get_trips)
+    print("____________________")
+    print(trip_leader_manager.get_all_trip_leaders)

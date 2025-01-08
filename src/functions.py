@@ -8,53 +8,6 @@ from openpyxl.utils import get_column_letter
 from io import BytesIO
 
 
-def check_if_excel_cell(cell):
-    if (
-        isinstance(cell, str)
-        and len(cell) == 2
-        and cell[0].isalpha()
-        and cell[1].isdigit()
-    ):
-        return True
-
-    return False
-
-
-def reformat_cells_manager(value):
-    # if value is excel cell
-    if check_if_excel_cell(value):
-        return excel_to_df_indices(value)
-    # if it is a list of excel cells
-    elif isinstance(value, list):
-        reformatedCellList = []
-        for cell in value:
-            if check_if_excel_cell(cell):
-                reformatedCellList.append(excel_to_df_indices(cell))
-            else:
-                raise ValueError(
-                    f"Expected each value in variable list '{value}' to be a cell, but '{cell}' is not a cell."
-                )
-        return reformatedCellList
-    else:
-        # Don't reformat if it is not a cell or list of cells
-        return value
-
-
-def excel_to_df_indices(cell_reference):
-    # Extract the column letter and row number from the Excel cell reference
-    column_letter = cell_reference[0].upper()
-    row_number = int(cell_reference[1:])
-
-    # Convert column letter to zero-based index (e.g., "A" -> 0, "B" -> 1)
-    colIndex = ord(column_letter) - ord("A")
-
-    # Convert row number to zero-based index (e.g., 1 -> 0, 2 -> 1)
-    # remove 2 to account for the empty row at the top being automatically removed
-    rowIndex = row_number - 2
-
-    return rowIndex, colIndex
-
-
 def createLeader(
     prefsDF,
     tripLeaderDF,
@@ -212,8 +165,8 @@ def process_all_pref_files(
         for f in os.listdir(folder_path)
         if f.endswith(".xlsx")
         and not f.startswith("~")
-        and f != leaderGuideStatusFileName
-        and f != tripStatusFileName
+        and os.path.basename(f) != os.path.basename(leaderGuideStatusFileName)
+        and os.path.basename(f) != os.path.basename(tripStatusFileName)
     ]
 
     if not files:
@@ -249,7 +202,7 @@ def process_all_pref_files(
         )
 
 
-def process_leader_status_file(trip_leader_manager):
+def process_leader_status_file(trip_leader_manager, trip_manager):
     file_path = trip_leader_manager.cell_mappings["leaderGuideStatusFileName"]
 
     try:
@@ -266,11 +219,11 @@ def process_leader_status_file(trip_leader_manager):
     addLeaderGuideStatus(
         guideStatusDF,
         trip_leader_manager,
+        trip_manager,
     )
 
 
 def process_trip_status_file(trip_manager):
-    numberOfTrips = trip_manager.cell_mappings["numTrips"]
     file_path = trip_manager.cell_mappings["tripStatusFileName"]
 
     try:
@@ -284,7 +237,7 @@ def process_trip_status_file(trip_manager):
         print(f"Could not read {file_path}: {e}")
         raise
 
-    addTrips(trip_manager, numberOfTrips, tripStatusDF, file_path)
+    addTrips(trip_manager, tripStatusDF, file_path)
 
 
 def createExcelFileHighlighedOnThirds(trip_leader_manager, trip_manager):
