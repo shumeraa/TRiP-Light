@@ -16,18 +16,22 @@ leaderInfoDict = {
     "leaderPrefsCell": "D2",
     "nameCell": "C4",
     
+    # Numerical Questions
     "semestersLeftCell": "D5",
     "tripSatisfactionCell": "D6",
-    "tripInvolvementCell": "D7",
     "tripsAssignedCell": "D9",
     "tripDropCell": "D10",
     "tripPickupCell": "D11",
     "tripCancelledCell": "D12",
+    
+    # Short Answer Questions
+    "tripInvolvementCell": "D7",
     "mainGoalCell": "D14",
     "interestedCategoriesCell": "D15",
     "threeLeadersCell": ["C17", "D17", "E17"],
     "leadershipStyleCell": ["C18", "D18", "E18"],
     "additionalNotesCell": "D21",
+    
     "numTrips": numTrips,
     "nameCellGuideStatus": "D4",
     "firstPromotionalCategoryCell": "E4",  # the last promotional category cell must have a blank column after it, that is the signal to stop

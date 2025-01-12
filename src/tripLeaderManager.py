@@ -15,6 +15,7 @@ class TripLeader:
         tripPickedUp,
         tripCancelled,
         # Short Answer Questions
+        tripInvolvement,
         mainGoal,
         interestedCategories,
         threeLeaders,
@@ -30,6 +31,7 @@ class TripLeader:
         self.tripDropped = tripDropped
         self.tripPickedUp = tripPickedUp
         self.tripCancelled = tripCancelled
+        self.tripInvolvement = tripInvolvement
         self.mainGoal = mainGoal
         self.interestedCategories = interestedCategories
         self.threeLeaders = threeLeaders
@@ -39,7 +41,15 @@ class TripLeader:
     def __repr__(self):
         prefs_str = ", ".join(map(str, self.prefs))
         guide_status_str = ", ".join(f"{k}: {v}" for k, v in self.guideStatus.items())
-        return f"TripLeader(name={self.name}, prefs=[{prefs_str}], guideStatus={{ {guide_status_str} }})"
+        return (
+            f"TripLeader(name={self.name}, prefs=[{prefs_str}], guideStatus={{ {guide_status_str} }}, "
+            f"semestersLeft={self.semestersLeft}, tripSatisfaction={self.tripSatisfaction}, "
+            f"tripsAssigned={self.tripsAssigned}, tripDropped={self.tripDropped}, "
+            f"tripPickedUp={self.tripPickedUp}, tripCancelled={self.tripCancelled}, "
+            f"tripInvolvement={self.tripInvolvement}, mainGoal={self.mainGoal}, "
+            f"interestedCategories={self.interestedCategories}, threeLeaders={self.threeLeaders}, "
+            f"leadershipStyle={self.leadershipStyle}, additionalNotes={self.additionalNotes})"
+        )
 
     def categorize_prefs(self):
         if not self.prefs:

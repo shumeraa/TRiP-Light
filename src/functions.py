@@ -14,11 +14,34 @@ def create_leader(
     trip_leader_manager,
     file_path,
 ):
+    # Name and prefs
     name, prefs = get_leader_name_and_prefs(
         prefsDF, tripLeaderDF, trip_leader_manager, file_path
     )
 
-    # semestersLeft, tripSatisfaction, tripsAssigned, tripDropped, tripPickedUp, tripCancelled = getNumericalQuestions()
+    # Numerical questions
+    (
+        semestersLeft,
+        tripSatisfaction,
+        tripsAssigned,
+        tripDropped,
+        tripPickedUp,
+        tripCancelled,
+    ) = getNumericalQuestions(
+        tripLeaderDF,
+        trip_leader_manager,
+        file_path,
+    )
+
+    # Short answer questions
+    (
+        tripInvolvement,
+        mainGoal,
+        interestedCategories,
+        threeLeaders,
+        leadershipStyle,
+        additionalNotes,
+    ) = getShortAnswerQuestions(tripLeaderDF, trip_leader_manager, file_path)
 
     leader = TripLeader(
         name,
@@ -29,8 +52,75 @@ def create_leader(
         tripDropped,
         tripPickedUp,
         tripCancelled,
+        tripInvolvement,
+        mainGoal,
+        interestedCategories,
+        threeLeaders,
+        leadershipStyle,
+        additionalNotes,
     )
+    
     trip_leader_manager.add_trip_leader(leader)
+
+
+def getShortAnswerQuestions(
+    tripLeaderDF,
+    trip_leader_manager,
+    file_path,
+):
+    # combine the three cells into one string, and remove any empty cells
+    def combineThreeCells(listOfThreeCells):
+        return "\n".join(
+            [
+                tripLeaderDF.iloc[cell[0], cell[1]]
+                for cell in listOfThreeCells
+                if not pd.isnull(tripLeaderDF.iloc[cell[0], cell[1]])
+            ]
+        )
+
+    tripInvolvementXY = trip_leader_manager.cell_mappings["tripInvolvementCell"]
+    mainGoalXY = trip_leader_manager.cell_mappings["mainGoalCell"]
+    interestedCategoriesXY = trip_leader_manager.cell_mappings[
+        "interestedCategoriesCell"
+    ]
+    threeLeadersXY = trip_leader_manager.cell_mappings["threeLeadersCell"]
+    leadershipStyleXY = trip_leader_manager.cell_mappings["leadershipStyleCell"]
+    additionalNotesXY = trip_leader_manager.cell_mappings["additionalNotesCell"]
+
+    tripInvolvement = tripLeaderDF.iloc[tripInvolvementXY[0], tripInvolvementXY[1]]
+    mainGoal = tripLeaderDF.iloc[mainGoalXY[0], mainGoalXY[1]]
+    interestedCategories = tripLeaderDF.iloc[
+        interestedCategoriesXY[0], interestedCategoriesXY[1]
+    ]
+    additionalNotes = tripLeaderDF.iloc[additionalNotesXY[0], additionalNotesXY[1]]
+    threeLeaders = combineThreeCells(threeLeadersXY)
+    leadershipStyle = combineThreeCells(leadershipStyleXY)
+
+    allShortAnswerQuestions = [
+        tripInvolvement,
+        mainGoal,
+        interestedCategories,
+        threeLeaders,
+        leadershipStyle,
+        additionalNotes,
+    ]
+
+    # if any of the questions are empty, print a warning and set them to an empty string
+    for question in allShortAnswerQuestions:
+        if pd.isnull(question):
+            print(
+                f"Warning: A short answer question is empty in {file_path}. Setting to empty string."
+            )
+            question = ""
+
+    return (
+        tripInvolvement,
+        mainGoal,
+        interestedCategories,
+        threeLeaders,
+        leadershipStyle,
+        additionalNotes,
+    )
 
 
 def getNumericalQuestions(
@@ -45,20 +135,38 @@ def getNumericalQuestions(
     tripDroppedXY = trip_leader_manager.cell_mappings["tripDropCell"]
     tripPickedUpXY = trip_leader_manager.cell_mappings["tripPickupCell"]
     tripCancelledXY = trip_leader_manager.cell_mappings["tripCancelledCell"]
-    
+
     semestersLeft = tripLeaderDF.iloc[semestersLeftXY[0], semestersLeftXY[1]]
     tripSatisfaction = tripLeaderDF.iloc[tripSatisfactionXY[0], tripSatisfactionXY[1]]
     tripsAssigned = tripLeaderDF.iloc[tripsAssignedXY[0], tripsAssignedXY[1]]
     tripDropped = tripLeaderDF.iloc[tripDroppedXY[0], tripDroppedXY[1]]
     tripPickedUp = tripLeaderDF.iloc[tripPickedUpXY[0], tripPickedUpXY[1]]
     tripCancelled = tripLeaderDF.iloc[tripCancelledXY[0], tripCancelledXY[1]]
-    
-    allNumericalQuestions = [semestersLeft, tripSatisfaction, tripsAssigned, tripDropped, tripPickedUp, tripCancelled]
-    
-    # if any of the questions are empty ()
-    
-    return semestersLeft, tripSatisfaction, tripsAssigned, tripDropped, tripPickedUp, tripCancelled
-    
+
+    allNumericalQuestions = [
+        semestersLeft,
+        tripSatisfaction,
+        tripsAssigned,
+        tripDropped,
+        tripPickedUp,
+        tripCancelled,
+    ]
+
+    # if any of the questions are empty, print a warning and set them to 0
+    # use pandas isnull to check if the value is NaN
+    for question in allNumericalQuestions:
+        if pd.isnull(question):
+            print(f"Warning: Numerical question is empty in {file_path}. Setting to 0.")
+            question = 0
+
+    return (
+        semestersLeft,
+        tripSatisfaction,
+        tripsAssigned,
+        tripDropped,
+        tripPickedUp,
+        tripCancelled,
+    )
 
 
 def get_leader_name_and_prefs(

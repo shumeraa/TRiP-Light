@@ -6,3 +6,5 @@ _____
 
 fixed createLeader, now need to fix add trips (and make it add trip classes for each trip)
 then print lead guide for each 
+
+check for numbers in blacked out cells by checking for duplicates
