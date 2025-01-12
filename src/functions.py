@@ -8,7 +8,20 @@ from openpyxl.utils import get_column_letter
 from io import BytesIO
 
 
-def createLeader(
+def create_leader(
+    prefsDF,
+    tripLeaderDF,
+    trip_leader_manager,
+    file_path,
+):
+    name, prefs = get_leader_name_and_prefs(
+        prefsDF, tripLeaderDF, trip_leader_manager, file_path
+    )
+    leader = TripLeader(name, prefs)
+    trip_leader_manager.add_trip_leader(leader)
+
+
+def get_leader_name_and_prefs(
     prefsDF,
     tripLeaderDF,
     trip_leader_manager,
@@ -48,8 +61,7 @@ def createLeader(
         )
         raise
 
-    leader = TripLeader(name, prefs)
-    trip_leader_manager.add_trip_leader(leader)
+    return name, prefs
 
 
 def addTrips(trip_manager, tripDF, file_path):
@@ -80,11 +92,7 @@ def addTrips(trip_manager, tripDF, file_path):
         raise
 
 
-def addLeaderGuideStatus(
-    guideStatusDF,
-    trip_leader_manager,
-    trip_manager
-):
+def addLeaderGuideStatus(guideStatusDF, trip_leader_manager, trip_manager):
     nameCellGuideStatus = trip_leader_manager.cell_mappings["nameCellGuideStatus"]
     firstPromotionalCategoryCell = trip_leader_manager.cell_mappings[
         "firstPromotionalCategoryCell"
@@ -103,14 +111,14 @@ def addLeaderGuideStatus(
         category.lower().strip()
         availableGuideCategories.append(category)
         currentCategoryCol += 1
-        
+
     trip_categories = trip_manager.get_available_categories()
-    
+
     if not set(availableGuideCategories).issubset(set(trip_categories)):
         raise ValueError(
             f"Guide categories in the guide status doc do not match the trip categories. Guide categories: {availableGuideCategories}, Trip categories: {trip_categories}."
         )
-        
+
     print("The categories are: ", availableGuideCategories)
 
     # now iterate through every leader to get their guide status and add it to their leader object
@@ -194,7 +202,8 @@ def process_all_pref_files(
             print(f"Could not read {file_name}: {e}")
             raise
 
-        createLeader(
+        # fix this to use all create_leader params
+        create_leader(
             prefsDF,
             tripLeaderDF,
             trip_leader_manager,
@@ -319,77 +328,78 @@ def createExcelFileHighlighedOnThirds(trip_leader_manager, trip_manager):
     print(f"Excel file '{outputFileName}' created and formatted successfully.")
 
 
-# def createExcelFileHighlightedOnLeader(trip_leader_manager, trip_manager):
-#     outputFileName = "output.xlsx"
+def createExcelFileHighlightedOnLeader(trip_leader_manager, trip_manager):
+    outputFileName = "output.xlsx"
 
-#     # if output file already exists, delete it
-#     try:
-#         if os.path.exists(outputFileName):
-#             os.remove(outputFileName)
-#     except Exception as e:
-#         print("Error: Cannot have the file open. Details:", e)
+    # if output file already exists, delete it
+    try:
+        if os.path.exists(outputFileName):
+            os.remove(outputFileName)
+    except Exception as e:
+        print("Error: Cannot have the file open. Details:", e)
 
-#     # create an empty dataframe with "Dates" and "TRiP" as columns
-#     df = pd.DataFrame(columns=["Dates", "TRiP"])
+    # create an empty dataframe with "Dates" and "TRiP" as columns
+    df = pd.DataFrame(columns=["Dates", "TRiP", "Category"])
 
-#     # populate the first and second columns with trip dates and names
-#     trip_data = [
-#         {"Dates": trip.date, "TRiP": trip.name} for trip in trip_manager.get_trips()
-#     ]
-#     df = pd.concat([df, pd.DataFrame(trip_data)], ignore_index=True)
+    # populate the first and second columns with trip dates and names
+    trip_data = [
+        {"Dates": trip.date, "TRiP": trip.name, "Category": trip.category}
+        for trip in trip_manager.get_trips()
+    ]
+    df = pd.concat([df, pd.DataFrame(trip_data)], ignore_index=True)
 
-#     # populate the rest of the columns with the header of the trip leader name, and underneath their preferences
-#     for leader in trip_leader_manager.get_all_trip_leaders():
-#         # Ensure the list of preferences is the same length as the number of trips
-#         prefs = leader.prefs + [None] * (len(df) - len(leader.prefs))
-#         df[leader.name] = prefs
+    # populate the rest of the columns with the header of the trip leader name, and underneath their preferences
+    for leader in trip_leader_manager.get_all_trip_leaders():
+        # Ensure the list of preferences is the same length as the number of trips
+        prefs = leader.prefs + [None] * (len(df) - len(leader.prefs))
+        df[leader.name] = prefs
 
-#     # write the dataframe to an excel file
-#     df.to_excel(outputFileName, index=False)
+    # write the dataframe to an excel file
+    df.to_excel(outputFileName, index=False)
 
-#     # Load the workbook and select the active worksheet
-#     wb = load_workbook(outputFileName)
-#     ws = wb.active
+    # Load the workbook and select the active worksheet
+    wb = load_workbook(outputFileName)
+    ws = wb.active
 
-#     # Bold the headers and center all cells
-#     header_font = Font(bold=True)
-#     center_alignment = Alignment(horizontal="center", vertical="center")
+    # Bold the headers and center all cells
+    header_font = Font(bold=True)
+    center_alignment = Alignment(horizontal="center", vertical="center")
 
-#     # Apply formatting to headers
-#     for cell in ws[1]:  # First row (headers)
-#         cell.font = header_font
-#         cell.alignment = center_alignment
+    # Apply formatting to headers
+    for cell in ws[1]:  # First row (headers)
+        cell.font = header_font
+        cell.alignment = center_alignment
 
-#     # Colors for different categories
-#     color_map = {
-#         "LeadGuide": PatternFill(
-#             start_color="00FF00", end_color="00FF00", fill_type="solid"
-#         ),  # Red
-#         "AssistantGuide": PatternFill(
-#             start_color="FFFF00", end_color="FFFF00", fill_type="solid"
-#         ),  # Yellow
-#         "nan": PatternFill(
-#             start_color="000000", end_color="000000", fill_type="solid"
-#         ),  # Black
-#     }
+    # Colors for different categories
+    color_map = {
+        "LeadGuide": PatternFill(
+            start_color="00FF00", end_color="00FF00", fill_type="solid"
+        ),  # Red
+        "AssistantGuide": PatternFill(
+            start_color="FFFF00", end_color="FFFF00", fill_type="solid"
+        ),  # Yellow
+        "nan": PatternFill(
+            start_color="000000", end_color="000000", fill_type="solid"
+        ),  # Black
+    }
 
-#     # Apply center alignment and color based on preference category
-#     for i, leader in enumerate(
-#         trip_leader_manager.get_all_trip_leaders(), start=3
-#     ):  # Columns start from C
-#         categories = leader.categorize_prefs()
-#         for row_num, (pref, category) in enumerate(
-#             categories, start=2
-#         ):  # Rows start from 2 (first row is header)
-#             cell = ws.cell(row=row_num, column=i)
-#             cell.alignment = center_alignment
+    # Apply center alignment and color based on preference category
+    for i, leader in enumerate(
+        trip_leader_manager.get_all_trip_leaders(), start=3
+    ):  # Columns start from C
+        categories = leader.categorize_prefs()
+        for row_num, (pref, category) in enumerate(
+            categories, start=2
+        ):  # Rows start from 2 (first row is header)
+            cell = ws.cell(row=row_num, column=i)
+            cell.alignment = center_alignment
 
-#             if pd.isna(pref):
-#                 cell.fill = color_map["nan"]
-#             else:
-#                 cell.fill = color_map.get(category, None)
+            if pd.isna(pref):
+                cell.fill = color_map["nan"]
+            else:
+                cell.fill = color_map.get(category, None)
 
-#     # Save the formatted Excel file
-#     wb.save(outputFileName)
+    # Save the formatted Excel file
+    wb.save(outputFileName)
 
-#     print(f"Excel file '{outputFileName}' created and formatted successfully.")
+    print(f"Excel file '{outputFileName}' created and formatted successfully.")

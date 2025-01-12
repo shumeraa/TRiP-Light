@@ -7,8 +7,8 @@ class Trip:
         if not name:
             raise ValueError("Trip name cannot be empty")
         elif not isinstance(name, str):
-            raise ValueError("Trip name must be a string")
-        
+            raise ValueError(f"Trip name '{name}' must be a string")
+
         self.name = name
 
         # Check if the date is a datetime object
@@ -19,12 +19,14 @@ class Trip:
         elif isinstance(date, str):
             self.date = date  # If it's a string, store it as is
         else:
-            raise ValueError("Date must be either a datetime object or a string")
-        
+            raise ValueError(
+                f"Trip date for '{name}' must be either an excel datetime or a string"
+            )
+
         if not category:
-            raise ValueError("Trip category cannot be empty")
+            raise ValueError(f"Trip category for '{name}' cannot be empty")
         elif not isinstance(category, str):
-            raise ValueError("Trip category must be a string")
+            raise ValueError(f"Trip category for '{name}' must be a string")
         self.category = category
 
     def __repr__(self):
@@ -54,6 +56,6 @@ class TripManager:
 
     def get_trips(self):
         return self.trips
-    
+
     def get_available_categories(self):
         return list(set([trip.category for trip in self.trips]))

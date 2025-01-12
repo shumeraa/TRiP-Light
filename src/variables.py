@@ -7,7 +7,7 @@ tripInfoDict = {
     "datesCell": "B2",
     "tripCell": "C2",
     "tripCategoryCell": "D2",
-    "tripStatusFileName": "Data/TripStatusInfo.xlsx", # make sure to include the folder name
+    "tripStatusFileName": "Data/TripStatusInfo.xlsx",  # make sure to include the folder name
     "numTrips": numTrips,
 }
 

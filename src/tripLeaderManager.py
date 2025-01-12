@@ -3,14 +3,36 @@ from utils import reformat_cells_manager
 
 
 class TripLeader:
-    def __init__(self, name: str, prefs=None):
+    def __init__(
+        self,
+        name,
+        prefs,
+        
+        # Numbers
+        semestersLeft,
+        tripSatisfaction, 
+        tripsAssigned,
+        tripDropped,
+        tripPickedUp,
+        tripCancelled,
+        
+        # Short Answer Questions
+        mainGoal,
+        interestedCategories,
+        threeLeaders,
+        leadershipStyle,
+        additionalNotes,
+    ):
+        self.guideStatus = {}  # will be added after instantiation
         self.name = name
-        self.prefs = prefs if prefs is not None else []
-        self.guideStatus = {}
+        self.prefs = prefs
+        
+        
+        
 
     def __repr__(self):
-        prefs_str = ', '.join(map(str, self.prefs))
-        guide_status_str = ', '.join(f"{k}: {v}" for k, v in self.guideStatus.items())
+        prefs_str = ", ".join(map(str, self.prefs))
+        guide_status_str = ", ".join(f"{k}: {v}" for k, v in self.guideStatus.items())
         return f"TripLeader(name={self.name}, prefs=[{prefs_str}], guideStatus={{ {guide_status_str} }})"
 
     def categorize_prefs(self):

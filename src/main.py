@@ -39,12 +39,12 @@ if __name__ == "__main__":
 
     process_leader_status_file(trip_leader_manager, trip_manager)
 
-    createExcelFileHighlighedOnThirds(trip_leader_manager, trip_manager)
+    #createExcelFileHighlighedOnThirds(trip_leader_manager, trip_manager)
     
-    for trip in trip_manager.get_trips():
-        print(trip)
+    # for trip in trip_manager.get_trips():
+    #     print(trip)
         
-    print("____________________")
+    # print("____________________")
     
     for trip_leader in trip_leader_manager.get_all_trip_leaders():
         print(trip_leader)
