@@ -1,5 +1,5 @@
 import math
-from utils import reformat_cells_manager
+from utils import reformat_cells
 
 
 class TripLeader:
@@ -7,15 +7,13 @@ class TripLeader:
         self,
         name,
         prefs,
-        
-        # Numbers
+        # Numerical Questions
         semestersLeft,
-        tripSatisfaction, 
+        tripSatisfaction,
         tripsAssigned,
         tripDropped,
         tripPickedUp,
         tripCancelled,
-        
         # Short Answer Questions
         mainGoal,
         interestedCategories,
@@ -26,9 +24,17 @@ class TripLeader:
         self.guideStatus = {}  # will be added after instantiation
         self.name = name
         self.prefs = prefs
-        
-        
-        
+        self.semestersLeft = semestersLeft
+        self.tripSatisfaction = tripSatisfaction
+        self.tripsAssigned = tripsAssigned
+        self.tripDropped = tripDropped
+        self.tripPickedUp = tripPickedUp
+        self.tripCancelled = tripCancelled
+        self.mainGoal = mainGoal
+        self.interestedCategories = interestedCategories
+        self.threeLeaders = threeLeaders
+        self.leadershipStyle = leadershipStyle
+        self.additionalNotes = additionalNotes
 
     def __repr__(self):
         prefs_str = ", ".join(map(str, self.prefs))
@@ -79,7 +85,7 @@ class TripLeaderManager:
         self.cell_mappings = {}
 
         self.cell_mappings = {
-            key: reformat_cells_manager(value) for key, value in cell_mappings.items()
+            key: reformat_cells(value) for key, value in cell_mappings.items()
         }
 
     def add_trip_leader(self, trip_leader: TripLeader):

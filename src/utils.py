@@ -7,7 +7,7 @@ def check_if_excel_cell(cell):
     return False
 
 
-def reformat_cells_manager(value):
+def reformat_cells(value):
     # if value is excel cell
     if check_if_excel_cell(value):
         return excel_to_df_indices(value)

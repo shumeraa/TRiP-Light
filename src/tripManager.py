@@ -1,5 +1,5 @@
 from datetime import datetime
-from utils import reformat_cells_manager
+from utils import reformat_cells
 
 
 class Trip:
@@ -45,7 +45,7 @@ class TripManager:
             if isinstance(value, int):
                 self.cell_mappings[key] = value
             else:
-                self.cell_mappings[key] = reformat_cells_manager(value)
+                self.cell_mappings[key] = reformat_cells(value)
 
     def add_trip(self, name: str, date, category):
         trip = Trip(name, date, category)

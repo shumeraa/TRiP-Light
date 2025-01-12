@@ -15,6 +15,7 @@ leaderInfoDict = {
     "leaderTripCell": "C2",
     "leaderPrefsCell": "D2",
     "nameCell": "C4",
+    
     "semestersLeftCell": "D5",
     "tripSatisfactionCell": "D6",
     "tripInvolvementCell": "D7",

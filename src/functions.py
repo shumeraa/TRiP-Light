@@ -17,8 +17,48 @@ def create_leader(
     name, prefs = get_leader_name_and_prefs(
         prefsDF, tripLeaderDF, trip_leader_manager, file_path
     )
-    leader = TripLeader(name, prefs)
+
+    # semestersLeft, tripSatisfaction, tripsAssigned, tripDropped, tripPickedUp, tripCancelled = getNumericalQuestions()
+
+    leader = TripLeader(
+        name,
+        prefs,
+        semestersLeft,
+        tripSatisfaction,
+        tripsAssigned,
+        tripDropped,
+        tripPickedUp,
+        tripCancelled,
+    )
     trip_leader_manager.add_trip_leader(leader)
+
+
+def getNumericalQuestions(
+    tripLeaderDF,
+    trip_leader_manager,
+    file_path,
+):
+
+    semestersLeftXY = trip_leader_manager.cell_mappings["semestersLeftCell"]
+    tripSatisfactionXY = trip_leader_manager.cell_mappings["tripSatisfactionCell"]
+    tripsAssignedXY = trip_leader_manager.cell_mappings["tripsAssignedCell"]
+    tripDroppedXY = trip_leader_manager.cell_mappings["tripDropCell"]
+    tripPickedUpXY = trip_leader_manager.cell_mappings["tripPickupCell"]
+    tripCancelledXY = trip_leader_manager.cell_mappings["tripCancelledCell"]
+    
+    semestersLeft = tripLeaderDF.iloc[semestersLeftXY[0], semestersLeftXY[1]]
+    tripSatisfaction = tripLeaderDF.iloc[tripSatisfactionXY[0], tripSatisfactionXY[1]]
+    tripsAssigned = tripLeaderDF.iloc[tripsAssignedXY[0], tripsAssignedXY[1]]
+    tripDropped = tripLeaderDF.iloc[tripDroppedXY[0], tripDroppedXY[1]]
+    tripPickedUp = tripLeaderDF.iloc[tripPickedUpXY[0], tripPickedUpXY[1]]
+    tripCancelled = tripLeaderDF.iloc[tripCancelledXY[0], tripCancelledXY[1]]
+    
+    allNumericalQuestions = [semestersLeft, tripSatisfaction, tripsAssigned, tripDropped, tripPickedUp, tripCancelled]
+    
+    # if any of the questions are empty ()
+    
+    return semestersLeft, tripSatisfaction, tripsAssigned, tripDropped, tripPickedUp, tripCancelled
+    
 
 
 def get_leader_name_and_prefs(
