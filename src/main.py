@@ -1,8 +1,10 @@
 from functions import (
     process_all_pref_files,
-    createExcelFileHighlighedOnThirds,
+    outputPrefsHighlightOnLeader,
     process_leader_status_file,
     process_trip_status_file,
+    outputNumericalQuestions,
+    outputShortAnswerQuestions,
 )
 from tripManager import TripManager
 from tripLeaderManager import TripLeaderManager
@@ -39,12 +41,18 @@ if __name__ == "__main__":
 
     process_leader_status_file(trip_leader_manager, trip_manager)
 
-    #createExcelFileHighlighedOnThirds(trip_leader_manager, trip_manager)
-    
+    outputPrefsHighlightOnLeader(trip_leader_manager, trip_manager)
+
+    outputNumericalQuestions(trip_leader_manager)
+
+    outputShortAnswerQuestions(trip_leader_manager)
+
+    # createExcelFileHighlighedOnThirds(trip_leader_manager, trip_manager)
+
     # for trip in trip_manager.get_trips():
     #     print(trip)
-        
+
     # print("____________________")
-    
-    for trip_leader in trip_leader_manager.get_all_trip_leaders():
-        print(trip_leader)
+
+    # for trip_leader in trip_leader_manager.get_all_trip_leaders():
+    #     print(trip_leader)

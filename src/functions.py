@@ -59,7 +59,7 @@ def create_leader(
         leadershipStyle,
         additionalNotes,
     )
-    
+
     trip_leader_manager.add_trip_leader(leader)
 
 
@@ -70,7 +70,7 @@ def getShortAnswerQuestions(
 ):
     # combine the three cells into one string, and remove any empty cells
     def combineThreeCells(listOfThreeCells):
-        return "\n".join(
+        return ", ".join(
             [
                 tripLeaderDF.iloc[cell[0], cell[1]]
                 for cell in listOfThreeCells
@@ -197,17 +197,28 @@ def get_leader_name_and_prefs(
         prefs.append(prefsDF.iloc[currentRow, prefXY[1]])
         currentRow += 1
 
-    # if the name is a float, it means it is NaN, and we should print that there is an error, but not raise an exception
-    if isinstance(name, float):
-        print(f"Error: Name is empty in {file_path}.")
-        raise
+    if pd.isnull(name):
+        raise ValueError(f"Error: Name is empty in {file_path}.")
+    if not isinstance(name, str):
+        raise ValueError(f"Error: Name is not a string in {file_path}.")
 
     # check that the number of prefs matches the number of trips, return for this
     if len(prefs) != numberOfTrips:
-        print(
+        raise ValueError(
             f"Error: Number of preferences does not match number of trips in {file_path}."
         )
-        raise
+
+    # make sure there are no repeating numbers in the prefs, excluding pd.isnull values
+    repeatedPrefs = [
+        pref for pref in prefs if not pd.isnull(pref) and prefs.count(pref) > 1
+    ]
+    if repeatedPrefs:
+        # raise ValueError(
+        #     f"Error: Repeating preferences in {file_path}. Repeated preferences: {repeatedPrefs}."
+        # )
+        print(
+            f"Error: Repeating preferences in {file_path}. Repeated preferences: {repeatedPrefs}."
+        )
 
     return name, prefs
 
@@ -398,7 +409,7 @@ def process_trip_status_file(trip_manager):
 
 
 def createExcelFileHighlighedOnThirds(trip_leader_manager, trip_manager):
-    outputFileName = "output.xlsx"
+    outputFileName = "output/output.xlsx"
 
     # if output file already exists, delete it
     try:
@@ -476,8 +487,8 @@ def createExcelFileHighlighedOnThirds(trip_leader_manager, trip_manager):
     print(f"Excel file '{outputFileName}' created and formatted successfully.")
 
 
-def createExcelFileHighlightedOnLeader(trip_leader_manager, trip_manager):
-    outputFileName = "output.xlsx"
+def outputPrefsHighlightOnLeader(trip_leader_manager, trip_manager):
+    outputFileName = "output/prefsOutput.xlsx"
 
     # if output file already exists, delete it
     try:
@@ -486,10 +497,10 @@ def createExcelFileHighlightedOnLeader(trip_leader_manager, trip_manager):
     except Exception as e:
         print("Error: Cannot have the file open. Details:", e)
 
-    # create an empty dataframe with "Dates" and "TRiP" as columns
+    # create an empty dataframe with "Dates", "TRiP", and "Category" as columns
     df = pd.DataFrame(columns=["Dates", "TRiP", "Category"])
 
-    # populate the first and second columns with trip dates and names
+    # populate the cols with trip dates, names, and categories
     trip_data = [
         {"Dates": trip.date, "TRiP": trip.name, "Category": trip.category}
         for trip in trip_manager.get_trips()
@@ -512,42 +523,144 @@ def createExcelFileHighlightedOnLeader(trip_leader_manager, trip_manager):
     # Bold the headers and center all cells
     header_font = Font(bold=True)
     center_alignment = Alignment(horizontal="center", vertical="center")
+    purple_fill = PatternFill(
+        start_color="D9D2E9", end_color="D9D2E9", fill_type="solid"
+    )
+    pink_fill = PatternFill(start_color="F4CCCC", end_color="F4CCCC", fill_type="solid")
+    black_fill = PatternFill(
+        start_color="000000", end_color="000000", fill_type="solid"
+    )
+    white_font = Font(color="FFFFFF")  # To ensure visibility in black-filled cells
 
     # Apply formatting to headers
     for cell in ws[1]:  # First row (headers)
         cell.font = header_font
         cell.alignment = center_alignment
 
-    # Colors for different categories
-    color_map = {
-        "LeadGuide": PatternFill(
-            start_color="00FF00", end_color="00FF00", fill_type="solid"
-        ),  # Red
-        "AssistantGuide": PatternFill(
-            start_color="FFFF00", end_color="FFFF00", fill_type="solid"
-        ),  # Yellow
-        "nan": PatternFill(
-            start_color="000000", end_color="000000", fill_type="solid"
-        ),  # Black
-    }
+    # Highlight cells based on guide status or emptiness
+    for row_idx, row in enumerate(
+        df.itertuples(index=False), start=2
+    ):  # Start from second row
+        category = row.Category
+        for col_idx, leader in enumerate(
+            trip_leader_manager.get_all_trip_leaders(), start=4
+        ):  # Start after "Dates", "TRiP", "Category"
+            guide_status = leader.guideStatus.get(category, None)
+            cell = ws.cell(row=row_idx, column=col_idx)
 
-    # Apply center alignment and color based on preference category
-    for i, leader in enumerate(
-        trip_leader_manager.get_all_trip_leaders(), start=3
-    ):  # Columns start from C
-        categories = leader.categorize_prefs()
-        for row_num, (pref, category) in enumerate(
-            categories, start=2
-        ):  # Rows start from 2 (first row is header)
-            cell = ws.cell(row=row_num, column=i)
+            if cell.value is None:  # Highlight empty preference cells black
+                cell.fill = black_fill
+                cell.font = white_font
+            elif guide_status is not None:
+                if guide_status == 1:  # Lead Guide
+                    cell.fill = purple_fill
+                elif guide_status == 0:  # Assistant Guide
+                    cell.fill = pink_fill
+                elif pd.isnull(guide_status):
+                    raise ValueError(
+                        f"Guide status for leader '{leader.name}' in category '{category}' is None."
+                    )
             cell.alignment = center_alignment
 
-            if pd.isna(pref):
-                cell.fill = color_map["nan"]
-            else:
-                cell.fill = color_map.get(category, None)
-
-    # Save the formatted Excel file
+    # Save the updated workbook
     wb.save(outputFileName)
 
     print(f"Excel file '{outputFileName}' created and formatted successfully.")
+
+
+def outputNumericalQuestions(trip_leader_manager):
+    outputFileName = "output/numericalQuestionsOutput.xlsx"
+
+    # Remove existing file safely
+    if os.path.exists(outputFileName):
+        try:
+            os.remove(outputFileName)
+        except Exception as e:
+            print(
+                f"Error: Unable to delete the file. Make sure it is closed. Details: {e}"
+            )
+            return
+
+    # Define column names
+    columns = [
+        "Name",
+        "Semesters Left",
+        "Trip Satisfaction",
+        "Trips Assigned",
+        "Trip Dropped",
+        "Trip Picked Up",
+        "Trip Cancelled",
+    ]
+
+    # Collect data efficiently
+    leader_data = [
+        {
+            "Name": leader.name,
+            "Semesters Left": leader.semestersLeft,
+            "Trip Satisfaction": leader.tripSatisfaction,
+            "Trips Assigned": leader.tripsAssigned,
+            "Trip Dropped": leader.tripDropped,
+            "Trip Picked Up": leader.tripPickedUp,
+            "Trip Cancelled": leader.tripCancelled,
+        }
+        for leader in trip_leader_manager.get_all_trip_leaders()
+    ]
+
+    # Create the DataFrame
+    df = pd.DataFrame(leader_data, columns=columns)
+
+    # Write the DataFrame to an Excel file
+    try:
+        df.to_excel(outputFileName, index=False)
+        print(f"Data successfully written to {outputFileName}.")
+    except Exception as e:
+        print(f"Error: Failed to write to {outputFileName}. Details: {e}")
+
+
+def outputShortAnswerQuestions(trip_leader_manager):
+    outputFileName = "output/shortAnswerQuestionsOutput.xlsx"
+
+    # Remove existing file safely
+    if os.path.exists(outputFileName):
+        try:
+            os.remove(outputFileName)
+        except Exception as e:
+            print(
+                f"Error: Unable to delete the file. Make sure it is closed. Details: {e}"
+            )
+            return
+
+    # Define column names
+    columns = [
+        "Name",
+        "Trip Involvement",
+        "Main Goal",
+        "Interested Categories",
+        "Three Leaders",
+        "Leadership Style",
+        "Additional Notes",
+    ]
+
+    # Collect data efficiently
+    leader_data = [
+        {
+            "Name": leader.name,
+            "Trip Involvement": leader.tripInvolvement,
+            "Main Goal": leader.mainGoal,
+            "Interested Categories": leader.interestedCategories,
+            "Three Leaders": leader.threeLeaders,
+            "Leadership Style": leader.leadershipStyle,
+            "Additional Notes": leader.additionalNotes,
+        }
+        for leader in trip_leader_manager.get_all_trip_leaders()
+    ]
+
+    # Create the DataFrame
+    df = pd.DataFrame(leader_data, columns=columns)
+
+    # Write the DataFrame to an Excel file
+    try:
+        df.to_excel(outputFileName, index=False)
+        print(f"Data successfully written to {outputFileName}.")
+    except Exception as e:
+        print(f"Error: Failed to write to {outputFileName}. Details: {e}")

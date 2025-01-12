@@ -1,9 +1,9 @@
 .venv/
 Data/
-~$output.xlsx
-output.xlsx
+output/
 /OldData
 *.pyc
 __pycache__/
 *.py[cod]
 *$py.class
+*.xlsx
