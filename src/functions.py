@@ -92,7 +92,13 @@ def getShortAnswerQuestions(
     interestedCategories = tripLeaderDF.iloc[
         interestedCategoriesXY[0], interestedCategoriesXY[1]
     ]
-    additionalNotes = tripLeaderDF.iloc[additionalNotesXY[0], additionalNotesXY[1]]
+    # since additional notes is the last row, if it is empty it will be out of bounds, so check if it is in bounds first
+    additionalNotes = (
+        tripLeaderDF.iloc[additionalNotesXY[0], additionalNotesXY[1]]
+        if additionalNotesXY[0] < len(tripLeaderDF) and additionalNotesXY[1] < len(tripLeaderDF.columns)
+        else None
+    )
+    
     threeLeaders = combineThreeCells(threeLeadersXY)
     leadershipStyle = combineThreeCells(leadershipStyleXY)
 
@@ -310,9 +316,10 @@ def addLeaderGuideStatus(guideStatusDF, trip_leader_manager, trip_manager):
             leaderObject.guideStatus = guideStatusDict
             currentLeaderRow += 1
         else:
-            raise ValueError(
-                f"Leader {name} from the leader guide status doc does not match any leaders from the prefs."
+            print(
+                f" WARNING:Leader {name} from the leader guide status doc does not match any leaders from the prefs."
             )
+            currentLeaderRow += 1
 
 
 def process_all_pref_files(
@@ -550,7 +557,6 @@ def outputPrefsHighlightOnLeader(trip_leader_manager, trip_manager):
 
             if cell.value is None:  # Highlight empty preference cells black
                 cell.fill = black_fill
-                cell.font = white_font
             elif guide_status is not None:
                 if guide_status == 1:  # Lead Guide
                     cell.fill = purple_fill

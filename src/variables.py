@@ -15,7 +15,6 @@ leaderInfoDict = {
     "leaderTripCell": "C2",
     "leaderPrefsCell": "D2",
     "nameCell": "C4",
-    
     # Numerical Questions
     "semestersLeftCell": "C5",
     "tripSatisfactionCell": "C6",
@@ -23,7 +22,6 @@ leaderInfoDict = {
     "tripDropCell": "C10",
     "tripPickupCell": "C11",
     "tripCancelledCell": "C12",
-    
     # Short Answer Questions
     "tripInvolvementCell": "C7",
     "mainGoalCell": "C14",
@@ -31,10 +29,9 @@ leaderInfoDict = {
     "threeLeadersCell": ["C17", "D17", "E17"],
     "leadershipStyleCell": ["C18", "D18", "E18"],
     "additionalNotesCell": "B21",
-    
     "numTrips": numTrips,
-    "nameCellGuideStatus": "C3", # The header cell
+    "nameCellGuideStatus": "C3",  # The header cell
     "firstPromotionalCategoryCell": "D3",  # the last promotional category cell must have a blank column after it, that is the signal to stop
-    "leaderGuideStatusFileName": "Data/TL Promotion Status - Aaron Vika.xlsx",  # make sure to include the folder name
+    "leaderGuideStatusFileName": "Data/TL Promotion Status - EDITED.xlsx",  # make sure to include the folder name
 }
 # example cell: 'B2', must start with letter and end with number
