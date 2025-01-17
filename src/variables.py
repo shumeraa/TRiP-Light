@@ -1,4 +1,4 @@
-numTrips = 58
+numTrips = 54
 prefsSheetIndex = 1  # 1st sheet is 0, second sheet is 1
 tripLeaderInfoIndex = 0
 folderPath = "Data"
