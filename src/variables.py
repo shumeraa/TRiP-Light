@@ -32,6 +32,6 @@ leaderInfoDict = {
     "numTrips": numTrips,
     "nameCellGuideStatus": "C3",  # The header cell
     "firstPromotionalCategoryCell": "D3",  # the last promotional category cell must have a blank column after it, that is the signal to stop
-    "leaderGuideStatusFileName": "Data/TL Promotion Status - EDITED.xlsx",  # make sure to include the folder name
+    "leaderGuideStatusFileName": "Data/TL Promotion Status.xlsx",  # make sure to include the folder name
 }
 # example cell: 'B2', must start with letter and end with number
