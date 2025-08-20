@@ -1,4 +1,4 @@
-numTrips = 20
+numTrips = 42
 prefsSheetIndex = 1  # 1st sheet is 0, second sheet is 1
 tripLeaderInfoIndex = 0
 folderPath = "Data"
@@ -27,7 +27,7 @@ leaderInfoDict = {
     "mainGoalCell": "C12",
     "interestedCategoriesCell": "C13",
     "threeLeadersCell": ["C15", "D15", "E15"],
-    "leadershipStyleCell": ["C16", "D16", "E16"],
+    #"leadershipStyleCell": ["C15", "D15", "E15"], # MADE TO BE THE SAME SINCE IT WAS DELETED
     "additionalNotesCell": "B19",
     "numTrips": numTrips,
     "nameCellGuideStatus": "C3",  # The header cell

@@ -41,7 +41,7 @@ def create_leader(
         mainGoal,
         interestedCategories,
         threeLeaders,
-        leadershipStyle,
+      #  leadershipStyle,
         additionalNotes,
     ) = getShortAnswerQuestions(tripLeaderDF, trip_leader_manager, file_path)
 
@@ -58,7 +58,7 @@ def create_leader(
         mainGoal,
         interestedCategories,
         threeLeaders,
-        leadershipStyle,
+#        leadershipStyle,
         additionalNotes,
     )
 
@@ -78,8 +78,9 @@ def getShortAnswerQuestions(
             if (cell[0] < len(tripLeaderDF) and 
                 cell[1] < len(tripLeaderDF.columns) and
                 not pd.isnull(tripLeaderDF.iloc[cell[0], cell[1]])):
-                valid_values.append(tripLeaderDF.iloc[cell[0], cell[1]])
+                valid_values.append(str(tripLeaderDF.iloc[cell[0], cell[1]]))
         return ", ".join(valid_values)
+
 
     tripInvolvementXY = trip_leader_manager.cell_mappings["tripInvolvementCell"]
     mainGoalXY = trip_leader_manager.cell_mappings["mainGoalCell"]
@@ -87,7 +88,7 @@ def getShortAnswerQuestions(
         "interestedCategoriesCell"
     ]
     threeLeadersXY = trip_leader_manager.cell_mappings["threeLeadersCell"]
-    leadershipStyleXY = trip_leader_manager.cell_mappings["leadershipStyleCell"]
+    #leadershipStyleXY = trip_leader_manager.cell_mappings["leadershipStyleCell"]
     additionalNotesXY = trip_leader_manager.cell_mappings["additionalNotesCell"]
 
     # Helper function to safely get cell value
@@ -102,14 +103,14 @@ def getShortAnswerQuestions(
     additionalNotes = safe_get_cell(additionalNotesXY[0], additionalNotesXY[1])
     
     threeLeaders = combineThreeCells(threeLeadersXY)
-    leadershipStyle = combineThreeCells(leadershipStyleXY)
+    #leadershipStyle = combineThreeCells(leadershipStyleXY)
 
     allShortAnswerQuestions = [
         tripInvolvement,
         mainGoal,
         interestedCategories,
         threeLeaders,
-        leadershipStyle,
+#        leadershipStyle,
         additionalNotes,
     ]
 
@@ -713,7 +714,7 @@ def outputShortAnswerQuestions(trip_leader_manager):
             "Main Goal": leader.mainGoal,
             "Interested Categories": leader.interestedCategories,
             "Three Leaders": leader.threeLeaders,
-            "Leadership Style": leader.leadershipStyle,
+#            "Leadership Style": leader.leadershipStyle,
             "Additional Notes": leader.additionalNotes,
         }
         for leader in trip_leader_manager.get_all_trip_leaders()

@@ -19,7 +19,7 @@ class TripLeader:
         mainGoal,
         interestedCategories,
         threeLeaders,
-        leadershipStyle,
+       # leadershipStyle,
         additionalNotes,
     ):
         self.guideStatus = {}  # will be added after instantiation
@@ -35,7 +35,7 @@ class TripLeader:
         self.mainGoal = mainGoal
         self.interestedCategories = interestedCategories
         self.threeLeaders = threeLeaders
-        self.leadershipStyle = leadershipStyle
+      #  self.leadershipStyle = leadershipStyle
         self.additionalNotes = additionalNotes
 
     def __repr__(self):
