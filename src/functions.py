@@ -6,6 +6,8 @@ from openpyxl import load_workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.utils import get_column_letter
 from io import BytesIO
+import variables
+from difflib import SequenceMatcher
 
 
 def create_leader(
@@ -70,13 +72,14 @@ def getShortAnswerQuestions(
 ):
     # combine the three cells into one string, and remove any empty cells
     def combineThreeCells(listOfThreeCells):
-        return ", ".join(
-            [
-                tripLeaderDF.iloc[cell[0], cell[1]]
-                for cell in listOfThreeCells
-                if not pd.isnull(tripLeaderDF.iloc[cell[0], cell[1]])
-            ]
-        )
+        valid_values = []
+        for cell in listOfThreeCells:
+            # Check if cell coordinates are within bounds
+            if (cell[0] < len(tripLeaderDF) and 
+                cell[1] < len(tripLeaderDF.columns) and
+                not pd.isnull(tripLeaderDF.iloc[cell[0], cell[1]])):
+                valid_values.append(tripLeaderDF.iloc[cell[0], cell[1]])
+        return ", ".join(valid_values)
 
     tripInvolvementXY = trip_leader_manager.cell_mappings["tripInvolvementCell"]
     mainGoalXY = trip_leader_manager.cell_mappings["mainGoalCell"]
@@ -87,17 +90,16 @@ def getShortAnswerQuestions(
     leadershipStyleXY = trip_leader_manager.cell_mappings["leadershipStyleCell"]
     additionalNotesXY = trip_leader_manager.cell_mappings["additionalNotesCell"]
 
-    tripInvolvement = tripLeaderDF.iloc[tripInvolvementXY[0], tripInvolvementXY[1]]
-    mainGoal = tripLeaderDF.iloc[mainGoalXY[0], mainGoalXY[1]]
-    interestedCategories = tripLeaderDF.iloc[
-        interestedCategoriesXY[0], interestedCategoriesXY[1]
-    ]
-    # since additional notes is the last row, if it is empty it will be out of bounds, so check if it is in bounds first
-    additionalNotes = (
-        tripLeaderDF.iloc[additionalNotesXY[0], additionalNotesXY[1]]
-        if additionalNotesXY[0] < len(tripLeaderDF) and additionalNotesXY[1] < len(tripLeaderDF.columns)
-        else None
-    )
+    # Helper function to safely get cell value
+    def safe_get_cell(row, col):
+        if row < len(tripLeaderDF) and col < len(tripLeaderDF.columns):
+            return tripLeaderDF.iloc[row, col]
+        return None
+
+    tripInvolvement = safe_get_cell(tripInvolvementXY[0], tripInvolvementXY[1])
+    mainGoal = safe_get_cell(mainGoalXY[0], mainGoalXY[1])
+    interestedCategories = safe_get_cell(interestedCategoriesXY[0], interestedCategoriesXY[1])
+    additionalNotes = safe_get_cell(additionalNotesXY[0], additionalNotesXY[1])
     
     threeLeaders = combineThreeCells(threeLeadersXY)
     leadershipStyle = combineThreeCells(leadershipStyleXY)
@@ -112,21 +114,14 @@ def getShortAnswerQuestions(
     ]
 
     # if any of the questions are empty, print a warning and set them to an empty string
-    for question in allShortAnswerQuestions:
-        if pd.isnull(question):
-            print(
-                f"Warning: A short answer question is empty in {file_path}. Setting to empty string."
-            )
-            question = ""
+    for i, question in enumerate(allShortAnswerQuestions):
+        if pd.isnull(question) or question == "":
+            # print(
+            #     f"Warning: A short answer question is empty in {file_path}. Setting to empty string."
+            # )
+            allShortAnswerQuestions[i] = ""
 
-    return (
-        tripInvolvement,
-        mainGoal,
-        interestedCategories,
-        threeLeaders,
-        leadershipStyle,
-        additionalNotes,
-    )
+    return tuple(allShortAnswerQuestions)
 
 
 def getNumericalQuestions(
@@ -158,11 +153,11 @@ def getNumericalQuestions(
         tripCancelled,
     ]
 
-    # if any of the questions are empty, print a warning and set them to 0
+    # if any of the questions are empty, print a warning and set to 0
     # use pandas isnull to check if the value is NaN
     for question in allNumericalQuestions:
         if pd.isnull(question):
-            print(f"Warning: Numerical question is empty in {file_path}. Setting to 0.")
+            #print(f"Warning: Numerical question is empty in {file_path}. Setting to 0.")
             question = 0
 
     return (
@@ -175,45 +170,87 @@ def getNumericalQuestions(
     )
 
 
+from openpyxl import load_workbook
+import pandas as pd
+
 def get_leader_name_and_prefs(
     prefsDF,
     tripLeaderDF,
     trip_leader_manager,
     file_path,
 ):
-
     nameXY = trip_leader_manager.cell_mappings["nameCell"]
     prefXY = trip_leader_manager.cell_mappings["leaderPrefsCell"]
     tripXY = trip_leader_manager.cell_mappings["leaderTripCell"]
     numberOfTrips = trip_leader_manager.cell_mappings["numTrips"]
-
+    
+    # Load the Excel workbook to check cell formatting
+    workbook = load_workbook(file_path)
+    sheet_names = workbook.sheetnames
+    worksheet = workbook[sheet_names[variables.prefsSheetIndex]]  # or specify sheet name if needed
+    
     name = tripLeaderDF.iloc[nameXY[0], nameXY[1]]
     name = (
         name.lower().strip()
     )  # make name lowercase and remove any leading/trailing whitespace
-
     currentRow = prefXY[0] + 1
-
     prefs = []
-
+    
     # while the corresponding trip is not empty, add the preferences to the list
     while currentRow < len(prefsDF) and not pd.isnull(
         prefsDF.iloc[currentRow, tripXY[1]]
     ):
-        prefs.append(prefsDF.iloc[currentRow, prefXY[1]])
+        # Check if the preference cell is highlighted black
+        # +2 to account for the header row and 1-based indexing in Excel
+        pref_cell = worksheet.cell(row=currentRow + 2, column=prefXY[1] + 1)
+        
+        cell_value = prefsDF.iloc[currentRow, prefXY[1]]
+        
+        # Print background color for debugging
+        col_letter = get_column_letter(prefXY[1] + 1)
+        start_color = pref_cell.fill.start_color.index if pref_cell.fill.start_color else "None"
+        end_color = pref_cell.fill.end_color.index if pref_cell.fill.end_color else "None"
+        #print(f"Cell {col_letter}{currentRow + 2}: start_color={start_color}, end_color={end_color}, value='{cell_value}'")
+        
+        # Check for black highlighting (background fill)
+        # Handle both string and integer color values
+        def is_black_color(color_value):
+            if color_value is None or color_value == "None":
+                return False
+            # Exact match for black cells: start_color=1, end_color=64
+            return color_value == 1 or color_value == 64
+        
+        is_black = is_black_color(start_color) and is_black_color(end_color)
+        
+        if is_black:
+            # Only print warning and append None if the cell is black AND has a non-empty value
+            if not pd.isnull(cell_value) and cell_value != "":
+                print(
+                    f"WARNING: Black highlighted cell found for leader '{name}' in {os.path.basename(file_path)}.\n"
+                    f"  - Cell: {col_letter}{currentRow + 2}\n"
+                    f"  - Value: {cell_value}"
+                )
+                print(f"  - Appending None to prefs due to black highlighting")
+            
+            # Append None for all black highlighted cells (empty or not)
+            prefs.append(None)
+        else:
+            prefs.append(cell_value)
+        
         currentRow += 1
-
+    
+    # Close the workbook to free memory
+    workbook.close()
+    
     if pd.isnull(name):
         raise ValueError(f"Error: Name is empty in {file_path}.")
     if not isinstance(name, str):
         raise ValueError(f"Error: Name is not a string in {file_path}.")
-
     # check that the number of prefs matches the number of trips, return for this
     if len(prefs) != numberOfTrips:
         raise ValueError(
             f"Error: Number of preferences does not match number of trips in {file_path}."
         )
-
     # make sure there are no repeating numbers in the prefs, excluding pd.isnull values
     repeatedPrefs = [
         pref for pref in prefs if not pd.isnull(pref) and prefs.count(pref) > 1
@@ -225,7 +262,6 @@ def get_leader_name_and_prefs(
         print(
             f"Error: Repeating preferences in {file_path}. Repeated preferences: {repeatedPrefs}."
         )
-
     return name, prefs
 
 
@@ -263,6 +299,17 @@ def addLeaderGuideStatus(guideStatusDF, trip_leader_manager, trip_manager):
         "firstPromotionalCategoryCell"
     ]
 
+    # Helper function to find the best match for a name
+    def find_best_match(target_name, all_leader_names, threshold=0.8):
+        best_match = None
+        best_ratio = 0
+        for leader_name in all_leader_names:
+            ratio = SequenceMatcher(None, target_name, leader_name).ratio()
+            if ratio > best_ratio:
+                best_ratio = ratio
+                best_match = leader_name
+        return best_match if best_ratio >= threshold else None
+
     # first, get all of the available guide categories
     availableGuideCategories = []
     currentCategoryCol = firstPromotionalCategoryCell[1]
@@ -286,6 +333,9 @@ def addLeaderGuideStatus(guideStatusDF, trip_leader_manager, trip_manager):
 
     print("The categories are: ", availableGuideCategories)
 
+    # Get all leader names for fuzzy matching
+    all_leader_names = [leader.name for leader in trip_leader_manager.get_all_trip_leaders()]
+
     # now iterate through every leader to get their guide status and add it to their leader object
     # if the cell has LG, set status to 1, if anything else, set status to 0
     currentLeaderRow = nameCellGuideStatus[0] + 1  # skip the header row
@@ -295,7 +345,15 @@ def addLeaderGuideStatus(guideStatusDF, trip_leader_manager, trip_manager):
         name = guideStatusDF.iloc[currentLeaderRow, nameCellGuideStatus[1]]
         name = name.lower().strip()
 
+        # Try exact match first
         leaderObject = trip_leader_manager.find_trip_leader(name)
+
+        # If no exact match, try fuzzy matching
+        if leaderObject is None:
+            best_match = find_best_match(name, all_leader_names)
+            if best_match:
+                leaderObject = trip_leader_manager.find_trip_leader(best_match)
+                print(f"Fuzzy match found: '{name}' matched to '{best_match}'")
 
         if leaderObject != None:
             # the leader exists, so we can add the guide status to them
@@ -415,7 +473,7 @@ def process_trip_status_file(trip_manager):
     addTrips(trip_manager, tripStatusDF, file_path)
 
 
-def createExcelFileHighlighedOnThirds(trip_leader_manager, trip_manager):
+def createExcelFileHighligtedOnThirds(trip_leader_manager, trip_manager):
     outputFileName = "output/output.xlsx"
 
     # if output file already exists, delete it

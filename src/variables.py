@@ -1,4 +1,4 @@
-numTrips = 54
+numTrips = 20
 prefsSheetIndex = 1  # 1st sheet is 0, second sheet is 1
 tripLeaderInfoIndex = 0
 folderPath = "Data"
@@ -18,20 +18,20 @@ leaderInfoDict = {
     # Numerical Questions
     "semestersLeftCell": "C5",
     "tripSatisfactionCell": "C6",
-    "tripsAssignedCell": "C9",
-    "tripDropCell": "C10",
-    "tripPickupCell": "C11",
-    "tripCancelledCell": "C12",
+    "tripsAssignedCell": "C8",
+    "tripDropCell": "C9",
+    "tripPickupCell": "C10",
+    "tripCancelledCell": "C4", # Removed
     # Short Answer Questions
-    "tripInvolvementCell": "C7",
-    "mainGoalCell": "C14",
-    "interestedCategoriesCell": "C15",
-    "threeLeadersCell": ["C17", "D17", "E17"],
-    "leadershipStyleCell": ["C18", "D18", "E18"],
-    "additionalNotesCell": "B21",
+    "tripInvolvementCell": "C4",  # Removed
+    "mainGoalCell": "C12",
+    "interestedCategoriesCell": "C13",
+    "threeLeadersCell": ["C15", "D15", "E15"],
+    "leadershipStyleCell": ["C16", "D16", "E16"],
+    "additionalNotesCell": "B19",
     "numTrips": numTrips,
     "nameCellGuideStatus": "C3",  # The header cell
     "firstPromotionalCategoryCell": "D3",  # the last promotional category cell must have a blank column after it, that is the signal to stop
-    "leaderGuideStatusFileName": "Data/TL Promotion Status.xlsx",  # make sure to include the folder name
+    "leaderGuideStatusFileName": "Data/TLPromotionStatus.xlsx",  # make sure to include the folder name
 }
 # example cell: 'B2', must start with letter and end with number
