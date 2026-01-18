@@ -21,7 +21,7 @@ from openpyxl import load_workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
-import variables
+import config
 from tripLeaderManager import TripLeader, TripLeaderManager
 from tripManager import TripManager
 
@@ -188,7 +188,7 @@ def get_leader_name_and_prefs(
     workbook = load_workbook(file_path)
     sheet_names = workbook.sheetnames
     worksheet = workbook[
-        sheet_names[variables.prefsSheetIndex]
+        sheet_names[config.prefsSheetIndex]
     ]  # or specify sheet name if needed
 
     name = tripLeaderDF.iloc[nameXY[0], nameXY[1]]

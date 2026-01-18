@@ -17,6 +17,15 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+## Configuration
+
+The application uses `config.yaml` in the project root for all configuration settings including:
+- Number of trips for the current semester
+- Excel cell mappings for extracting data from preference files
+- File paths for input data files
+
+To modify cell mappings or file paths, edit `config.yaml` directly - no code changes needed.
+
 ## Running the Application
 
 ```bash
@@ -28,6 +37,7 @@ The script expects:
 - Preference files (`.xlsx`) in the `Data/` directory
 - `TripStatusInfo.xlsx` in `Data/` containing trip information
 - `TLPromotionStatus.xlsx` in `Data/` containing leader guide status
+- `config.yaml` in the project root with cell mappings
 
 Output files are generated in the `output/` directory:
 - `prefsOutput.xlsx` - Preferences highlighted by leader guide status
@@ -55,7 +65,7 @@ pytest -v
 - `TripManager` (in `tripManager.py`) manages trip data and provides trip querying
 - `TripLeaderManager` (in `tripLeaderManager.py`) manages trip leader data and provides leader lookup
 
-Both managers use a `cell_mappings` dictionary (defined in `variables.py`) to map semantic field names to Excel cell locations. The `reformat_cells()` utility in `utils.py` converts Excel-style cell references (e.g., "B2") into zero-indexed DataFrame coordinates.
+Both managers use a `cell_mappings` dictionary (loaded from `config.yaml` via `config.py`) to map semantic field names to Excel cell locations. The `reformat_cells()` utility in `utils.py` converts Excel-style cell references (e.g., "B2") into zero-indexed DataFrame coordinates.
 
 **Data Flow**: The main processing pipeline (`main.py`) follows this sequence:
 1. Process all preference files in the `Data/` folder via `process_all_pref_files()`
@@ -63,11 +73,11 @@ Both managers use a `cell_mappings` dictionary (defined in `variables.py`) to ma
 3. Read leader guide status from `TLPromotionStatus.xlsx` via `process_leader_status_file()`
 4. Generate three output Excel files with formatting
 
-**Excel Cell Mapping**: All Excel cell references are centralized in `variables.py` in two dictionaries:
-- `tripInfoDict` - Maps trip-related fields to cells in `TripStatusInfo.xlsx`
-- `leaderInfoDict` - Maps leader-related fields to cells in preference files and `TLPromotionStatus.xlsx`
+**Excel Cell Mapping**: All Excel cell references are centralized in `config.yaml` with two main sections:
+- `tripInfo` - Maps trip-related fields to cells in `TripStatusInfo.xlsx`
+- `leaderInfo` - Maps leader-related fields to cells in preference files and `TLPromotionStatus.xlsx`
 
-Cell references are strings like "C4" or lists like `["C15", "D15", "E15"]` for multi-cell fields. The `utils.py` module handles conversion from Excel notation to DataFrame indices.
+Cell references are strings like "C4" or lists like `["C15", "D15", "E15"]` for multi-cell fields. The `config.py` module loads these from YAML, and `utils.py` handles conversion from Excel notation to DataFrame indices.
 
 **Preference Processing**: The `create_leader()` function in `functions.py` reads each preference file using openpyxl to detect black-highlighted cells (which indicate unavailable trips for that leader). Black highlighting is identified by checking if `start_color` and `end_color` are both 1 or 64. Preferences in black-highlighted cells are stored as `None`.
 
@@ -80,12 +90,13 @@ Cell references are strings like "C4" or lists like `["C15", "D15", "E15"]` for 
 
 ### Key Files
 
+- `config.yaml` - YAML configuration file with cell mappings and settings (edit this to change configuration)
+- `src/config.py` - Configuration loader that reads config.yaml and provides Python interface
 - `src/main.py` - Entry point that orchestrates the processing pipeline
 - `src/functions.py` - Core data processing functions for reading Excel files and generating outputs
 - `src/tripManager.py` - Trip class and TripManager for managing trip data
 - `src/tripLeaderManager.py` - TripLeader class and TripLeaderManager for managing leader data
 - `src/utils.py` - Utility functions for Excel cell reference conversion
-- `src/variables.py` - Configuration for number of trips and cell mapping dictionaries
 
 ### Important Implementation Details
 

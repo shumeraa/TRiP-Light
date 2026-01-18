@@ -14,7 +14,7 @@ Output files are created in the output/ directory:
 - shortAnswerQuestionsOutput.xlsx: Text responses from leaders
 """
 
-import variables
+import config
 from functions import (
     outputNumericalQuestions,
     outputPrefsHighlightOnLeader,
@@ -36,13 +36,13 @@ if __name__ == "__main__":
     print(WELCOME_TEXT)
 
     # Load configuration variables
-    prefsSheetIndex = variables.prefsSheetIndex
-    tripLeaderInfoIndex = variables.tripLeaderInfoIndex
-    folderPath = variables.folderPath
+    prefsSheetIndex = config.prefsSheetIndex
+    tripLeaderInfoIndex = config.tripLeaderInfoIndex
+    folderPath = config.folderPath
 
     # Initialize managers with cell mapping dictionaries
-    trip_leader_manager = TripLeaderManager(variables.leaderInfoDict)
-    trip_manager = TripManager(variables.tripInfoDict)
+    trip_leader_manager = TripLeaderManager(config.leaderInfoDict)
+    trip_manager = TripManager(config.tripInfoDict)
 
     # Extract file paths from cell mappings
     tripStatusFileName = trip_manager.cell_mappings["tripStatusFileName"]

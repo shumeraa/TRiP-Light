@@ -1,0 +1,47 @@
+# TRiP-Light Configuration File
+# This file contains all configuration settings for processing trip leader preferences
+
+# File Processing Settings
+numTrips: 47  # Total number of trips for the current semester
+prefsSheetIndex: 1  # Zero-based index of preferences sheet (0=first sheet, 1=second sheet)
+tripLeaderInfoIndex: 0  # Zero-based index of trip leader info sheet
+folderPath: "Data"  # Folder containing preference files
+
+# Trip Information Cell Mappings
+# Defines where to find trip data in TripStatusInfo.xlsx
+tripInfo:
+  datesCell: "B2"
+  tripCell: "C2"
+  tripCategoryCell: "D2"
+  tripStatusFileName: "Data/TripStatusInfo.xlsx"
+
+# Trip Leader Information Cell Mappings
+# Defines where to find leader data in preference files
+leaderInfo:
+  # Preference tracking cells
+  leaderTripCell: "C2"
+  leaderPrefsCell: "E2"
+  nameCell: "C4"
+
+  # Numerical Questions
+  semestersLeftCell: "C5"
+  tripSatisfactionCell: "C6"
+  tripsAssignedCell: "C8"
+  tripDropCell: "C9"
+  tripPickupCell: "C10"
+  tripCancelledCell: "C4"  # Removed from survey but kept for compatibility
+
+  # Short Answer Questions
+  tripInvolvementCell: "C4"  # Removed from survey but kept for compatibility
+  mainGoalCell: "C12"
+  interestedCategoriesCell: "C13"
+  threeLeadersCell:
+    - "C15"
+    - "D15"
+    - "E15"
+  additionalNotesCell: "B19"
+
+  # Guide Status Information
+  nameCellGuideStatus: "C3"
+  firstPromotionalCategoryCell: "D3"
+  leaderGuideStatusFileName: "Data/TLPromotionStatus.xlsx"
