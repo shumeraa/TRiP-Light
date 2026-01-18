@@ -1,13 +1,29 @@
-import os
-import pandas as pd
+"""Core data processing functions for TRiP-Light preference handling.
+
+This module contains all the functions for:
+- Reading and parsing Excel preference files
+- Extracting trip leader data and preferences
+- Handling black-highlighted cells (unavailable trips)
+- Processing guide status and fuzzy name matching
+- Generating formatted Excel output files with conditional formatting
+
+The main workflow processes preference files to create TripLeader objects,
+then generates three output files with different views of the data.
+"""
+
 import math
-from tripLeaderManager import TripLeaderManager, TripLeader
-from openpyxl import load_workbook
-from openpyxl.styles import Font, Alignment, PatternFill
-from openpyxl.utils import get_column_letter
-from io import BytesIO
-import variables
+import os
 from difflib import SequenceMatcher
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import pandas as pd
+from openpyxl import load_workbook
+from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.utils import get_column_letter
+
+import variables
+from tripLeaderManager import TripLeader, TripLeaderManager
+from tripManager import TripManager
 
 
 def create_leader(
@@ -41,7 +57,6 @@ def create_leader(
         mainGoal,
         interestedCategories,
         threeLeaders,
-      #  leadershipStyle,
         additionalNotes,
     ) = getShortAnswerQuestions(tripLeaderDF, trip_leader_manager, file_path)
 
@@ -58,7 +73,6 @@ def create_leader(
         mainGoal,
         interestedCategories,
         threeLeaders,
-#        leadershipStyle,
         additionalNotes,
     )
 
@@ -75,12 +89,13 @@ def getShortAnswerQuestions(
         valid_values = []
         for cell in listOfThreeCells:
             # Check if cell coordinates are within bounds
-            if (cell[0] < len(tripLeaderDF) and 
-                cell[1] < len(tripLeaderDF.columns) and
-                not pd.isnull(tripLeaderDF.iloc[cell[0], cell[1]])):
+            if (
+                cell[0] < len(tripLeaderDF)
+                and cell[1] < len(tripLeaderDF.columns)
+                and not pd.isnull(tripLeaderDF.iloc[cell[0], cell[1]])
+            ):
                 valid_values.append(str(tripLeaderDF.iloc[cell[0], cell[1]]))
         return ", ".join(valid_values)
-
 
     tripInvolvementXY = trip_leader_manager.cell_mappings["tripInvolvementCell"]
     mainGoalXY = trip_leader_manager.cell_mappings["mainGoalCell"]
@@ -88,7 +103,6 @@ def getShortAnswerQuestions(
         "interestedCategoriesCell"
     ]
     threeLeadersXY = trip_leader_manager.cell_mappings["threeLeadersCell"]
-    #leadershipStyleXY = trip_leader_manager.cell_mappings["leadershipStyleCell"]
     additionalNotesXY = trip_leader_manager.cell_mappings["additionalNotesCell"]
 
     # Helper function to safely get cell value
@@ -99,27 +113,24 @@ def getShortAnswerQuestions(
 
     tripInvolvement = safe_get_cell(tripInvolvementXY[0], tripInvolvementXY[1])
     mainGoal = safe_get_cell(mainGoalXY[0], mainGoalXY[1])
-    interestedCategories = safe_get_cell(interestedCategoriesXY[0], interestedCategoriesXY[1])
+    interestedCategories = safe_get_cell(
+        interestedCategoriesXY[0], interestedCategoriesXY[1]
+    )
     additionalNotes = safe_get_cell(additionalNotesXY[0], additionalNotesXY[1])
-    
+
     threeLeaders = combineThreeCells(threeLeadersXY)
-    #leadershipStyle = combineThreeCells(leadershipStyleXY)
 
     allShortAnswerQuestions = [
         tripInvolvement,
         mainGoal,
         interestedCategories,
         threeLeaders,
-#        leadershipStyle,
         additionalNotes,
     ]
 
-    # if any of the questions are empty, print a warning and set them to an empty string
+    # if any of the questions are empty, set them to an empty string
     for i, question in enumerate(allShortAnswerQuestions):
         if pd.isnull(question) or question == "":
-            # print(
-            #     f"Warning: A short answer question is empty in {file_path}. Setting to empty string."
-            # )
             allShortAnswerQuestions[i] = ""
 
     return tuple(allShortAnswerQuestions)
@@ -154,25 +165,13 @@ def getNumericalQuestions(
         tripCancelled,
     ]
 
-    # if any of the questions are empty, print a warning and set to 0
-    # use pandas isnull to check if the value is NaN
-    for question in allNumericalQuestions:
+    # if any of the questions are empty, set to 0
+    for i, question in enumerate(allNumericalQuestions):
         if pd.isnull(question):
-            #print(f"Warning: Numerical question is empty in {file_path}. Setting to 0.")
-            question = 0
+            allNumericalQuestions[i] = 0
 
-    return (
-        semestersLeft,
-        tripSatisfaction,
-        tripsAssigned,
-        tripDropped,
-        tripPickedUp,
-        tripCancelled,
-    )
+    return tuple(allNumericalQuestions)
 
-
-from openpyxl import load_workbook
-import pandas as pd
 
 def get_leader_name_and_prefs(
     prefsDF,
@@ -184,19 +183,21 @@ def get_leader_name_and_prefs(
     prefXY = trip_leader_manager.cell_mappings["leaderPrefsCell"]
     tripXY = trip_leader_manager.cell_mappings["leaderTripCell"]
     numberOfTrips = trip_leader_manager.cell_mappings["numTrips"]
-    
+
     # Load the Excel workbook to check cell formatting
     workbook = load_workbook(file_path)
     sheet_names = workbook.sheetnames
-    worksheet = workbook[sheet_names[variables.prefsSheetIndex]]  # or specify sheet name if needed
-    
+    worksheet = workbook[
+        sheet_names[variables.prefsSheetIndex]
+    ]  # or specify sheet name if needed
+
     name = tripLeaderDF.iloc[nameXY[0], nameXY[1]]
     name = (
         name.lower().strip()
     )  # make name lowercase and remove any leading/trailing whitespace
     currentRow = prefXY[0] + 1
     prefs = []
-    
+
     # while the corresponding trip is not empty, add the preferences to the list
     while currentRow < len(prefsDF) and not pd.isnull(
         prefsDF.iloc[currentRow, tripXY[1]]
@@ -204,25 +205,18 @@ def get_leader_name_and_prefs(
         # Check if the preference cell is highlighted black
         # +2 to account for the header row and 1-based indexing in Excel
         pref_cell = worksheet.cell(row=currentRow + 2, column=prefXY[1] + 1)
-        
+
         cell_value = prefsDF.iloc[currentRow, prefXY[1]]
-        
-        # Print background color for debugging
+
         col_letter = get_column_letter(prefXY[1] + 1)
-        start_color = pref_cell.fill.start_color.index if pref_cell.fill.start_color else "None"
-        end_color = pref_cell.fill.end_color.index if pref_cell.fill.end_color else "None"
-        #print(f"Cell {col_letter}{currentRow + 2}: start_color={start_color}, end_color={end_color}, value='{cell_value}'")
-        
-        # Check for black highlighting (background fill)
-        # Handle both string and integer color values
-        def is_black_color(color_value):
-            if color_value is None or color_value == "None":
-                return False
-            # Exact match for black cells: start_color=1, end_color=64
-            return color_value == 1 or color_value == 64
-        
-        is_black = is_black_color(start_color) and is_black_color(end_color)
-        
+        start_color = (
+            pref_cell.fill.start_color.index if pref_cell.fill.start_color else None
+        )
+        end_color = pref_cell.fill.end_color.index if pref_cell.fill.end_color else None
+
+        # Check for black highlighting (exact match: start_color=1, end_color=64)
+        is_black = (start_color in (1, 64)) and (end_color in (1, 64))
+
         if is_black:
             # Only print warning and append None if the cell is black AND has a non-empty value
             if not pd.isnull(cell_value) and cell_value != "":
@@ -232,17 +226,17 @@ def get_leader_name_and_prefs(
                     f"  - Value: {cell_value}"
                 )
                 print(f"  - Appending None to prefs due to black highlighting")
-            
+
             # Append None for all black highlighted cells (empty or not)
             prefs.append(None)
         else:
             prefs.append(cell_value)
-        
+
         currentRow += 1
-    
+
     # Close the workbook to free memory
     workbook.close()
-    
+
     if pd.isnull(name):
         raise ValueError(f"Error: Name is empty in {file_path}.")
     if not isinstance(name, str):
@@ -257,9 +251,6 @@ def get_leader_name_and_prefs(
         pref for pref in prefs if not pd.isnull(pref) and prefs.count(pref) > 1
     ]
     if repeatedPrefs:
-        # raise ValueError(
-        #     f"Error: Repeating preferences in {file_path}. Repeated preferences: {repeatedPrefs}."
-        # )
         print(
             f"Error: Repeating preferences in {file_path}. Repeated preferences: {repeatedPrefs}."
         )
@@ -335,7 +326,9 @@ def addLeaderGuideStatus(guideStatusDF, trip_leader_manager, trip_manager):
     print("The categories are: ", availableGuideCategories)
 
     # Get all leader names for fuzzy matching
-    all_leader_names = [leader.name for leader in trip_leader_manager.get_all_trip_leaders()]
+    all_leader_names = [
+        leader.name for leader in trip_leader_manager.get_all_trip_leaders()
+    ]
 
     # now iterate through every leader to get their guide status and add it to their leader object
     # if the cell has LG, set status to 1, if anything else, set status to 0
@@ -356,7 +349,7 @@ def addLeaderGuideStatus(guideStatusDF, trip_leader_manager, trip_manager):
                 leaderObject = trip_leader_manager.find_trip_leader(best_match)
                 print(f"Fuzzy match found: '{name}' matched to '{best_match}'")
 
-        if leaderObject != None:
+        if leaderObject is not None:
             # the leader exists, so we can add the guide status to them
             guideStatusDict = {}
             currentCategoryCol = firstPromotionalCategoryCell[1]
@@ -382,13 +375,26 @@ def addLeaderGuideStatus(guideStatusDF, trip_leader_manager, trip_manager):
 
 
 def process_all_pref_files(
-    trip_leader_manager,
-    prefsSheetIndex,
-    tripLeaderInfoIndex,
-    leaderGuideStatusFileName,
-    tripStatusFileName,
-    folder_path="Data",
-):
+    trip_leader_manager: TripLeaderManager,
+    prefsSheetIndex: int,
+    tripLeaderInfoIndex: int,
+    leaderGuideStatusFileName: str,
+    tripStatusFileName: str,
+    folder_path: str = "Data",
+) -> None:
+    """Process all preference Excel files in a folder and create TripLeader objects.
+
+    Reads all .xlsx files (excluding temp files and status files) from the specified
+    folder, extracts trip leader information from each, and adds them to the manager.
+
+    Args:
+        trip_leader_manager: TripLeaderManager to store created leaders.
+        prefsSheetIndex: Zero-based index of the preferences sheet.
+        tripLeaderInfoIndex: Zero-based index of the leader info sheet.
+        leaderGuideStatusFileName: Filename of leader guide status file to exclude.
+        tripStatusFileName: Filename of trip status file to exclude.
+        folder_path: Path to folder containing preference files. Defaults to "Data".
+    """
     if not os.path.exists(folder_path):
         print("Folder does not exist.")
         return
@@ -436,7 +442,21 @@ def process_all_pref_files(
         )
 
 
-def process_leader_status_file(trip_leader_manager, trip_manager):
+def process_leader_status_file(
+    trip_leader_manager: TripLeaderManager, trip_manager: TripManager
+) -> None:
+    """Read leader guide status file and update trip leaders with guide status.
+
+    Loads TLPromotionStatus.xlsx and adds guide status information (LG/AG) to each
+    trip leader object. Uses fuzzy name matching to handle minor name variations.
+
+    Args:
+        trip_leader_manager: TripLeaderManager containing trip leaders to update.
+        trip_manager: TripManager containing trip categories for validation.
+
+    Raises:
+        Exception: If the file cannot be read or is empty.
+    """
     file_path = trip_leader_manager.cell_mappings["leaderGuideStatusFileName"]
 
     try:
@@ -457,7 +477,18 @@ def process_leader_status_file(trip_leader_manager, trip_manager):
     )
 
 
-def process_trip_status_file(trip_manager):
+def process_trip_status_file(trip_manager: TripManager) -> None:
+    """Read trip status file and populate the trip manager with trip data.
+
+    Loads TripStatusInfo.xlsx and creates Trip objects for each row, adding them
+    to the trip manager.
+
+    Args:
+        trip_manager: TripManager to store trip data.
+
+    Raises:
+        Exception: If the file cannot be read or is empty.
+    """
     file_path = trip_manager.cell_mappings["tripStatusFileName"]
 
     try:
@@ -553,7 +584,21 @@ def createExcelFileHighligtedOnThirds(trip_leader_manager, trip_manager):
     print(f"Excel file '{outputFileName}' created and formatted successfully.")
 
 
-def outputPrefsHighlightOnLeader(trip_leader_manager, trip_manager):
+def outputPrefsHighlightOnLeader(
+    trip_leader_manager: TripLeaderManager, trip_manager: TripManager
+) -> None:
+    """Generate Excel file with preferences highlighted by leader guide status.
+
+    Creates output/prefsOutput.xlsx with trip leader preferences in columns.
+    Cells are color-coded based on guide status:
+    - Purple: Lead Guide (LG)
+    - Pink: Assistant Guide (AG)
+    - Black: Unavailable (None preference)
+
+    Args:
+        trip_leader_manager: TripLeaderManager containing all trip leaders.
+        trip_manager: TripManager containing trip data for rows.
+    """
     outputFileName = "output/prefsOutput.xlsx"
 
     # if output file already exists, delete it
@@ -633,7 +678,15 @@ def outputPrefsHighlightOnLeader(trip_leader_manager, trip_manager):
     print(f"Excel file '{outputFileName}' created and formatted successfully.")
 
 
-def outputNumericalQuestions(trip_leader_manager):
+def outputNumericalQuestions(trip_leader_manager: TripLeaderManager) -> None:
+    """Generate Excel file with numerical survey responses for each leader.
+
+    Creates output/numericalQuestionsOutput.xlsx with columns for name and
+    all numerical metrics (semesters left, satisfaction, trips assigned, etc.).
+
+    Args:
+        trip_leader_manager: TripLeaderManager containing all trip leaders.
+    """
     outputFileName = "output/numericalQuestionsOutput.xlsx"
 
     # Remove existing file safely
@@ -682,7 +735,15 @@ def outputNumericalQuestions(trip_leader_manager):
         print(f"Error: Failed to write to {outputFileName}. Details: {e}")
 
 
-def outputShortAnswerQuestions(trip_leader_manager):
+def outputShortAnswerQuestions(trip_leader_manager: TripLeaderManager) -> None:
+    """Generate Excel file with short answer survey responses for each leader.
+
+    Creates output/shortAnswerQuestionsOutput.xlsx with columns for name and
+    all text responses (involvement, goals, interested categories, etc.).
+
+    Args:
+        trip_leader_manager: TripLeaderManager containing all trip leaders.
+    """
     outputFileName = "output/shortAnswerQuestionsOutput.xlsx"
 
     # Remove existing file safely
@@ -714,7 +775,6 @@ def outputShortAnswerQuestions(trip_leader_manager):
             "Main Goal": leader.mainGoal,
             "Interested Categories": leader.interestedCategories,
             "Three Leaders": leader.threeLeaders,
-#            "Leadership Style": leader.leadershipStyle,
             "Additional Notes": leader.additionalNotes,
         }
         for leader in trip_leader_manager.get_all_trip_leaders()

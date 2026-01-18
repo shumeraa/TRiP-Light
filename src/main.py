@@ -1,33 +1,56 @@
+"""Main entry point for TRiP-Light preference processing.
+
+This script orchestrates the complete trip leader preference processing pipeline:
+1. Reads preference files from the Data/ directory
+2. Processes trip status and leader guide status information
+3. Generates three formatted Excel output files with highlighted preferences
+
+Usage:
+    python src/main.py
+
+Output files are created in the output/ directory:
+- prefsOutput.xlsx: Preferences highlighted by leader guide status
+- numericalQuestionsOutput.xlsx: Numerical metrics for each leader
+- shortAnswerQuestionsOutput.xlsx: Text responses from leaders
+"""
+
+import variables
 from functions import (
-    process_all_pref_files,
+    outputNumericalQuestions,
     outputPrefsHighlightOnLeader,
+    outputShortAnswerQuestions,
+    process_all_pref_files,
     process_leader_status_file,
     process_trip_status_file,
-    outputNumericalQuestions,
-    outputShortAnswerQuestions,
 )
-from tripManager import TripManager
 from tripLeaderManager import TripLeaderManager
-import variables
+from tripManager import TripManager
 
-welcomeText = "Welcome to TRiP-Light! Before you start, please make sure you have all of the prefs in your 'Data' folder located in the same directory as this script. Make sure there is only 1 empty row at the top of the prefs."
+WELCOME_TEXT = (
+    "Welcome to TRiP-Light! Before you start, please make sure you have all of the "
+    "prefs in your 'Data' folder located in the same directory as this script. "
+    "Make sure there is only 1 empty row at the top of the prefs."
+)
 
 if __name__ == "__main__":
-    print(welcomeText)
+    print(WELCOME_TEXT)
 
+    # Load configuration variables
     prefsSheetIndex = variables.prefsSheetIndex
     tripLeaderInfoIndex = variables.tripLeaderInfoIndex
     folderPath = variables.folderPath
 
+    # Initialize managers with cell mapping dictionaries
     trip_leader_manager = TripLeaderManager(variables.leaderInfoDict)
     trip_manager = TripManager(variables.tripInfoDict)
 
+    # Extract file paths from cell mappings
     tripStatusFileName = trip_manager.cell_mappings["tripStatusFileName"]
     leaderGuideStatusFileName = trip_leader_manager.cell_mappings[
         "leaderGuideStatusFileName"
     ]
 
-    # Add trips and create leaders
+    # Process all preference files and load trip leaders
     process_all_pref_files(
         trip_leader_manager,
         prefsSheetIndex,
@@ -37,22 +60,13 @@ if __name__ == "__main__":
         folderPath,
     )
 
+    # Load trip information from TripStatusInfo.xlsx
     process_trip_status_file(trip_manager)
 
+    # Load leader guide status and add to trip leaders
     process_leader_status_file(trip_leader_manager, trip_manager)
 
+    # Generate output files
     outputPrefsHighlightOnLeader(trip_leader_manager, trip_manager)
-
     outputNumericalQuestions(trip_leader_manager)
-
     outputShortAnswerQuestions(trip_leader_manager)
-
-    # createExcelFileHighlighedOnThirds(trip_leader_manager, trip_manager)
-
-    # for trip in trip_manager.get_trips():
-    #     print(trip)
-
-    # print("____________________")
-
-    # for trip_leader in trip_leader_manager.get_all_trip_leaders():
-    #     print(trip_leader)
