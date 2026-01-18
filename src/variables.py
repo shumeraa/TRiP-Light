@@ -1,4 +1,4 @@
-numTrips = 42
+numTrips = 47
 prefsSheetIndex = 1  # 1st sheet is 0, second sheet is 1
 tripLeaderInfoIndex = 0
 folderPath = "Data"
@@ -13,7 +13,7 @@ tripInfoDict = {
 
 leaderInfoDict = {
     "leaderTripCell": "C2",
-    "leaderPrefsCell": "D2",
+    "leaderPrefsCell": "E2",
     "nameCell": "C4",
     # Numerical Questions
     "semestersLeftCell": "C5",
