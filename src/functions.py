@@ -238,21 +238,38 @@ def get_leader_name_and_prefs(
     workbook.close()
 
     if pd.isnull(name):
-        raise ValueError(f"Error: Name is empty in {file_path}.")
+        raise ValueError(
+            f"Trip leader name is missing.\n\n"
+            f"The name field appears to be empty. Please check cell {get_column_letter(nameXY[1] + 1)}{nameXY[0] + 2} "
+            f"in the leader info sheet and make sure it contains the trip leader's name."
+        )
     if not isinstance(name, str):
-        raise ValueError(f"Error: Name is not a string in {file_path}.")
+        raise ValueError(
+            f"Trip leader name is not valid text.\n\n"
+            f"The name field contains an invalid value. Please check cell {get_column_letter(nameXY[1] + 1)}{nameXY[0] + 2} "
+            f"in the leader info sheet and make sure it contains text (not a number or formula)."
+        )
     # check that the number of prefs matches the number of trips, return for this
     if len(prefs) != numberOfTrips:
         raise ValueError(
-            f"Error: Number of preferences does not match number of trips in {file_path}."
+            f"Number of preferences does not match the expected number of trips.\n\n"
+            f"Expected: {numberOfTrips} preferences\n"
+            f"Found: {len(prefs)} preferences\n\n"
+            f"Please check that:\n"
+            f"1. The preferences sheet has exactly {numberOfTrips} rows of trip preferences\n"
+            f"2. The 'numTrips' setting in config.yaml is correct for this semester\n"
+            f"3. There is exactly 1 empty row at the top of the preferences sheet"
         )
     # make sure there are no repeating numbers in the prefs, excluding pd.isnull values
     repeatedPrefs = [
         pref for pref in prefs if not pd.isnull(pref) and prefs.count(pref) > 1
     ]
     if repeatedPrefs:
+        repeated_list = ', '.join(str(p) for p in set(repeatedPrefs))
         print(
-            f"Error: Repeating preferences in {file_path}. Repeated preferences: {repeatedPrefs}."
+            f"WARNING: Duplicate preference values found for '{name}'.\n"
+            f"Repeated preferences: {repeated_list}\n"
+            f"Each preference number should appear only once. Please review the preferences."
         )
     return name, prefs
 
@@ -279,10 +296,15 @@ def addTrips(trip_manager, tripDF, file_path):
     # return if that the number of trips added matches the number of trips in the tripDF
 
     if len(trip_manager.get_trips()) != numberOfTrips:
-        print(
-            f"Error: Number of trips added does not match number of trips in {file_path}. Expected {numberOfTrips}, got {len(trip_manager.get_trips())}."
+        raise ValueError(
+            f"Number of trips in '{os.path.basename(file_path)}' does not match configuration.\n\n"
+            f"Expected: {numberOfTrips} trips (from config.yaml)\n"
+            f"Found: {len(trip_manager.get_trips())} trips in the file\n\n"
+            f"Please check that:\n"
+            f"1. The 'numTrips' setting in config.yaml matches the actual number of trips\n"
+            f"2. The trip status file has the correct number of rows\n"
+            f"3. There is exactly 1 empty row at the top of the file"
         )
-        raise
 
 
 def addLeaderGuideStatus(guideStatusDF, trip_leader_manager, trip_manager):
@@ -396,8 +418,11 @@ def process_all_pref_files(
         folder_path: Path to folder containing preference files. Defaults to "Data".
     """
     if not os.path.exists(folder_path):
-        print("Folder does not exist.")
-        return
+        raise FileNotFoundError(
+            f"The '{folder_path}' folder does not exist.\n\n"
+            f"Please create a folder named '{folder_path}' in the same location as this program "
+            f"and place your trip leader preference files (.xlsx) in it."
+        )
 
     files = [
         f
@@ -409,37 +434,79 @@ def process_all_pref_files(
     ]
 
     if not files:
-        print("No valid Excel files found in the folder.")
-        return
+        raise FileNotFoundError(
+            f"No trip leader preference files found in '{folder_path}' folder.\n\n"
+            f"Please add at least one Excel file (.xlsx) containing trip leader preferences.\n"
+            f"Make sure the files don't start with '~' (temporary files)."
+        )
 
     for index, file_name in enumerate(files):
         file_path = os.path.join(folder_path, file_name)
 
         # Checking if the file is empty
         try:
-
             df = pd.ExcelFile(file_path, engine="openpyxl")
             sheetNames = df.sheet_names
+
+            if len(sheetNames) <= max(prefsSheetIndex, tripLeaderInfoIndex):
+                raise ValueError(
+                    f"File '{file_name}' does not have enough sheets.\n\n"
+                    f"Expected at least {max(prefsSheetIndex, tripLeaderInfoIndex) + 1} sheets, "
+                    f"but found only {len(sheetNames)}.\n"
+                    f"Please check the file format."
+                )
+
             prefsDF = pd.read_excel(file_path, sheet_name=sheetNames[prefsSheetIndex])
-            # modified_file = remove_black_highlighted_cells_in_column(file_path, sheetNames[prefsSheetIndex], prefXY[1])
             tripLeaderDF = pd.read_excel(
                 file_path, sheet_name=sheetNames[tripLeaderInfoIndex]
             )
 
-            if prefsDF.empty or tripLeaderDF.empty:
-                print(f"File {file_name} has an empty sheet, skipping.")
-                raise
+            if prefsDF.empty:
+                raise ValueError(
+                    f"File '{file_name}' has an empty preferences sheet (sheet {prefsSheetIndex + 1}).\n\n"
+                    f"Please make sure the file contains trip leader preferences."
+                )
+
+            if tripLeaderDF.empty:
+                raise ValueError(
+                    f"File '{file_name}' has an empty leader info sheet (sheet {tripLeaderInfoIndex + 1}).\n\n"
+                    f"Please make sure the file contains trip leader information."
+                )
+
+        except FileNotFoundError:
+            raise FileNotFoundError(
+                f"Could not find file '{file_name}' in '{folder_path}' folder.\n\n"
+                f"The file may have been moved or deleted."
+            )
+        except PermissionError:
+            raise PermissionError(
+                f"Cannot access file '{file_name}'.\n\n"
+                f"Please make sure:\n"
+                f"1. The file is not open in Excel or another program\n"
+                f"2. You have permission to read the file"
+            )
         except Exception as e:
-            print(f"Could not read {file_name}: {e}")
-            raise
+            raise RuntimeError(
+                f"Error reading file '{file_name}':\n\n"
+                f"{str(e)}\n\n"
+                f"Please check that the file is a valid Excel file (.xlsx) and is not corrupted."
+            )
 
         # fix this to use all create_leader params
-        create_leader(
-            prefsDF,
-            tripLeaderDF,
-            trip_leader_manager,
-            file_path,
-        )
+        try:
+            create_leader(
+                prefsDF,
+                tripLeaderDF,
+                trip_leader_manager,
+                file_path,
+            )
+        except ValueError as e:
+            # Re-raise ValueError with file context
+            raise ValueError(f"Error in file '{file_name}':\n\n{str(e)}")
+        except Exception as e:
+            raise RuntimeError(
+                f"Unexpected error processing file '{file_name}':\n\n{str(e)}"
+            )
 
 
 def process_leader_status_file(
@@ -459,16 +526,39 @@ def process_leader_status_file(
     """
     file_path = trip_leader_manager.cell_mappings["leaderGuideStatusFileName"]
 
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(
+            f"Leader guide status file not found: '{file_path}'\n\n"
+            f"This file contains information about which trip leaders are Lead Guides (LG) "
+            f"or Assistant Guides (AG) for each category.\n\n"
+            f"Please make sure the file exists in the specified location."
+        )
+
     try:
         guideStatusExcel = pd.ExcelFile(file_path, engine="openpyxl")
         guideStatusDF = pd.read_excel(guideStatusExcel, sheet_name=0)
 
         if guideStatusDF.empty:
-            print(f"File {file_path} has an empty sheet")
-            raise
-    except Exception as e:
-        print(f"Could not read {file_path}: {e}")
+            raise ValueError(
+                f"Leader guide status file '{os.path.basename(file_path)}' is empty.\n\n"
+                f"This file should contain trip leader names and their guide status (LG/AG) "
+                f"for each category."
+            )
+    except FileNotFoundError:
         raise
+    except PermissionError:
+        raise PermissionError(
+            f"Cannot access file '{os.path.basename(file_path)}'.\n\n"
+            f"Please make sure:\n"
+            f"1. The file is not open in Excel or another program\n"
+            f"2. You have permission to read the file"
+        )
+    except Exception as e:
+        raise RuntimeError(
+            f"Error reading leader guide status file '{os.path.basename(file_path)}':\n\n"
+            f"{str(e)}\n\n"
+            f"Please check that the file is a valid Excel file (.xlsx) and follows the expected format."
+        )
 
     addLeaderGuideStatus(
         guideStatusDF,
@@ -491,16 +581,37 @@ def process_trip_status_file(trip_manager: TripManager) -> None:
     """
     file_path = trip_manager.cell_mappings["tripStatusFileName"]
 
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(
+            f"Trip status file not found: '{file_path}'\n\n"
+            f"This file contains the list of all trips with their dates, names, and categories.\n\n"
+            f"Please make sure the file exists in the specified location."
+        )
+
     try:
         tripStatusExcel = pd.ExcelFile(file_path, engine="openpyxl")
         tripStatusDF = pd.read_excel(tripStatusExcel, sheet_name=0)
 
         if tripStatusDF.empty:
-            print(f"File {file_path} has an empty sheet")
-            raise
-    except Exception as e:
-        print(f"Could not read {file_path}: {e}")
+            raise ValueError(
+                f"Trip status file '{os.path.basename(file_path)}' is empty.\n\n"
+                f"This file should contain trip information including dates, names, and categories."
+            )
+    except FileNotFoundError:
         raise
+    except PermissionError:
+        raise PermissionError(
+            f"Cannot access file '{os.path.basename(file_path)}'.\n\n"
+            f"Please make sure:\n"
+            f"1. The file is not open in Excel or another program\n"
+            f"2. You have permission to read the file"
+        )
+    except Exception as e:
+        raise RuntimeError(
+            f"Error reading trip status file '{os.path.basename(file_path)}':\n\n"
+            f"{str(e)}\n\n"
+            f"Please check that the file is a valid Excel file (.xlsx) and follows the expected format."
+        )
 
     addTrips(trip_manager, tripStatusDF, file_path)
 
